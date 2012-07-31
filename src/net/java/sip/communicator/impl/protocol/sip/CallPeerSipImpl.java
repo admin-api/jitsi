@@ -142,6 +142,102 @@ public class CallPeerSipImpl
         setJainSipProvider(sourceProvider);
     }
 
+    public String getId()
+    {
+        if (this.isServer())
+        {
+            if (this.latestInviteTransaction != null)
+            {
+                CallIdHeader cid =
+                    (CallIdHeader) this.latestInviteTransaction.
+                        getRequest().getHeader(CallIdHeader.NAME);
+                return cid.getCallId();
+            }
+        }
+        else
+        {
+            Dialog dialog = this.getDialog();
+            if (dialog != null && dialog.getCallId() != null)
+            {
+                return this.getDialog().getCallId().getCallId();
+            }
+        }
+
+        return "";
+    }
+
+    public boolean isServer()
+    {
+        Dialog dialog = this.getDialog();
+        if (dialog != null)
+        {
+            return dialog.isServer();
+        }
+        if (logger.isDebugEnabled())
+            logger.debug("In isServer, Dialog is null don't trust this result it's useless");
+        return false;
+    }
+
+    /**
+     * Returns the String representation of the Address identifying
+     * the local party. This is the value of the From header of locally
+     * initiated requests in this dialog when acting as an User Agent Client.
+     * <p>
+     * This is the value of the To header of received responses in this dialog
+     * when acting as an User Agent Server.
+     *
+     * @return the address string URI of the local party.
+     */
+    public String getLocalURI()
+    {
+        String uri = "";
+        Dialog dialog = this.getDialog();
+
+        if (dialog != null)
+        {
+            if (dialog.getLocalParty() != null &&
+                dialog.getLocalParty().getURI() != null)
+            {
+                uri = dialog.getLocalParty().getURI().toString();
+
+                if (dialog.getLocalTag() != null)
+                {
+                    uri += ";tag=" + dialog.getLocalTag();
+                }
+            }
+        }
+        return uri;
+    }
+
+    /**
+     * Returns the String representation of the Address identifying the
+     * remote party. This is the value of the To header of locally initiated
+     * requests in this dialog when acting as an User Agent Client.
+     * <p>
+     * This is the value of the From header of received responses in this
+     * dialog when acting as an User Agent Server.
+     *
+     * @return the address URI string of the remote party.
+     */
+    public String getRemoteURI()
+    {
+        String uri = "";
+        Dialog dialog = this.getDialog();
+        if (dialog != null)
+        {
+            if (dialog.getRemoteParty() != null &&
+                dialog.getRemoteParty().getURI() != null)
+            {
+                uri = dialog.getRemoteParty().getURI().toString();
+                if (dialog.getRemoteTag() != null)
+                {
+                    uri += ";tag=" + dialog.getRemoteTag();
+                }
+            }
+        }
+        return uri;
+    }
+
     /**
      * Returns a String locator for that peer.
      *
@@ -272,7 +368,7 @@ public class CallPeerSipImpl
      * communication with this call peer.
      */
     public Dialog getDialog()
-    {
+    {        
         return jainSipDialog;
     }
 
@@ -475,7 +571,7 @@ public class CallPeerSipImpl
     public void processReInvite(ServerTransaction serverTransaction)
     {
         Request invite = serverTransaction.getRequest();
-
+        
         setLatestInviteTransaction(serverTransaction);
 
         // SDP description may be in ACKs - bug report Laurent Michel
@@ -486,9 +582,9 @@ public class CallPeerSipImpl
 
         Response response = null;
         try
-        {
+        {            
             response = messageFactory.createResponse(Response.OK, invite);
-
+         
             /*
              * If the local peer represented by the Call of this CallPeer is
              * acting as a conference focus, it must indicate it in its Contact
@@ -521,8 +617,19 @@ public class CallPeerSipImpl
                             serverTransaction, Response.SERVER_INTERNAL_ERROR);
             return;
         }
-
+        
         reevalRemoteHoldStatus();
+
+        /**
+         * Oren F: 06/21/2012
+         * Fixes a bug with HOLD. The use case is as follows:
+         * Set peer ON HOLD.
+         * Peer sets call ON HOLD.
+         * Peer takes call OFF HOLD.
+         * The audio stream passes continues to pass through.
+         */
+        CallPeerMediaHandlerSipImpl mediaHandler = getMediaHandler();
+        mediaHandler.setLocallyOnHold(mediaHandler.isLocallyOnHold());
 
         fireRequestProcessed(invite, response);
     }
@@ -1445,7 +1552,7 @@ public class CallPeerSipImpl
                     ex,
                     logger);
         }
-
+        
         getProtocolProvider().sendInDialogRequest(
                 getJainSipProvider(), invite, dialog);
     }
@@ -1464,11 +1571,12 @@ public class CallPeerSipImpl
         throws OperationFailedException
     {
         try
-        {
+        {                        
             ClientTransaction inviteTran
                 = (ClientTransaction) getLatestInviteTransaction();
             Request invite = inviteTran.getRequest();
 
+                        
             // Content-Type
             ContentTypeHeader contentTypeHeader
                 = getProtocolProvider()
@@ -1479,6 +1587,7 @@ public class CallPeerSipImpl
                     getMediaHandler().createOffer(),
                     contentTypeHeader);
 
+            
             /*
              * If the local peer represented by the Call of this CallPeer is
              * acting as a conference focus, it must indicate it in its Contact
@@ -1487,6 +1596,7 @@ public class CallPeerSipImpl
             reflectConferenceFocus(invite);
 
             inviteTran.sendRequest();
+                        
             if (logger.isDebugEnabled())
                 logger.debug("sent request:\n" + inviteTran.getRequest());
         }

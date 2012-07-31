@@ -28,7 +28,7 @@ import org.jitsi.service.protocol.event.*;
  * @author Lubomir Marinov
  * @author Yana Stamcheva
  */
-public interface CallPeer
+public interface CallPeer 
 {
     /**
      * The constant indicating that a <tt>CallPeer</tt> has not yet
@@ -314,4 +314,23 @@ public interface CallPeer
      * current security settings.
      */
     public CallPeerSecurityStatusEvent getCurrentSecuritySettings();
+
+    public String getRemoteURI();
+
+    public String getLocalURI();
+
+    /**
+     * Return true if is server.
+     *
+     * @return true if is server transaction created this dialog.
+     */
+    public boolean isServer();
+
+    /**
+     * Return the SIP Call-ID
+     *
+     * @return Call-ID
+     */
+    public String getId();
+
 }

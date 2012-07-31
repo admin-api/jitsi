@@ -176,4 +176,31 @@ public class MockCallPeer
         ConferenceMembersSoundLevelListener listener)
     {
     }
+
+    @Override
+    public String getRemoteURI()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public String getLocalURI()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public boolean isServer()
+    {
+        // TODO Auto-generated method stub
+        return false;
+    }
+
+    @Override
+    public String getId()
+    {
+        return null;
+    }
 }
