@@ -1,0 +1,28 @@
+Bundle-Activator: com.onsip.communicator.impl.applet.AppletActivator
+Bundle-Name: OnSIP Dialer Interface
+Bundle-Description: A bundle that interfaces with Jitsi for by way of the browser
+Bundle-Vendor: onsip.com
+Bundle-Version: 0.0.1
+System-Bundle: yes
+Bundle-ManifestVersion: 2
+Bundle-SymbolicName: com.onsip.communicator.impl.applet
+Import-Package: org.osgi.framework,
+ net.java.sip.communicator.service.protocol,
+ net.java.sip.communicator.service.protocol.media,
+ net.java.sip.communicator.service.protocol.event,
+ net.java.sip.communicator.service.gui,
+ net.java.sip.communicator.service.gui.event,
+ net.java.sip.communicator.service.notification,
+ net.java.sip.communicator.service.notification.event,
+ net.java.sip.communicator.util,
+ org.jitsi.service.protocol,
+ org.jitsi.service.protocol.event,
+ org.jitsi.service.resources,
+ org.jitsi.service.audionotifier,
+ org.jitsi.service.configuration,
+ org.jitsi.service.neomedia,
+ org.jitsi.service.neomedia.device,
+ org.jitsi.service.neomedia.event,
+ org.jitsi.service.neomedia.format,
+ javax.swing
+
