@@ -531,7 +531,7 @@ public class OperationSetBasicTelephonySipImpl
         case Response.MOVED_TEMPORARILY:
         case Response.MOVED_PERMANENTLY:
             {
-                CallPeerSipImpl callPeer = activeCallsRepository
+                callPeer = activeCallsRepository
                         .findCallPeer(clientTransaction.getDialog());
 
                 if (callPeer == null)
@@ -617,7 +617,7 @@ public class OperationSetBasicTelephonySipImpl
                 return true;
             }
 
-            CallPeerSipImpl callPeer
+            callPeer
                 = activeCallsRepository.findCallPeer(clientTransaction
                         .getDialog());
 

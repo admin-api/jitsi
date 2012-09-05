@@ -142,7 +142,8 @@ public class RegistrationManager
     {
         try
         {
-            if (evt.getNewState().equals(RegistrationState.CONNECTION_FAILED))
+            if (evt.getNewState().equals(RegistrationState.CONNECTION_FAILED) ||
+                evt.getNewState().equals(RegistrationState.AUTHENTICATION_FAILED))
             {
                 String s = (evt.getReason() == null) ? "" : evt.getReason();
                 if (s == null)
@@ -173,7 +174,6 @@ public class RegistrationManager
                 OperationSetBasicTelephony<?> basicTelephony =
                     provider.getOperationSet(OperationSetBasicTelephony.class);
                 basicTelephony.addCallListener(callManager);
-
             }
 
             Method m =
@@ -189,21 +189,25 @@ public class RegistrationManager
             if (evt.getProvider() != null)
             {
                 sendError(e, this.getAddressOfRecord(evt.getProvider()));
+                try
+                {
+                    // reset registration states
+                    this.unregister(evt.getProvider());
+                }
+                catch(Exception ex2)
+                {
+                    // do nothing
+                }
             }
         }
     }
 
-    public void unregister(String userId)
+    protected void unregister(ProtocolProviderService provider)
     {
-        ProtocolProviderService provider = null;
         try
         {
-            provider = AppletActivator.getPrototocolProviderService(userId);
-
             if (provider != null)
-            {
                 provider.unregister();
-            }
         }
         catch (OperationFailedException e)
         {
@@ -215,6 +219,21 @@ public class RegistrationManager
             }
         }
         finally
+        {
+            this.isFailOver = false;
+            this.registrationTimer = null;
+            REGISTRATION_COUNTER = 0;
+        }
+    }
+
+    public void unregister(String userId)
+    {
+        try
+        {
+            this.unregister(
+                AppletActivator.getPrototocolProviderService(userId));
+        }
+        catch(Exception ex)
         {
             this.isFailOver = false;
             this.registrationTimer = null;
@@ -571,7 +590,7 @@ public class RegistrationManager
          * Setting PROXY_AUTO_CONFIG to "true" forces DNS look ups to
          * follow the path of NAPTR to SRV to A or AAAA
          */
-        table.put(ProtocolProviderFactory.PROXY_AUTO_CONFIG, "true");
+        table.put(ProtocolProviderFactory.PROXY_AUTO_CONFIG, "false");
 
         return table;
     }
@@ -825,9 +844,6 @@ public class RegistrationManager
     {
         try
         {
-             // print details of all registered accounts
-            printRegisteredAccounts();
-
             String userId = e.getActionCommand();
             if (userId != null && userId.length() > 0)
             {
@@ -836,14 +852,15 @@ public class RegistrationManager
 
                 if (provider != null)
                 {
-                    boolean isRegistering =
-                        provider.getRegistrationState().equals
-                            (RegistrationState.REGISTERING);
-
-                    if (isRegistering)
+                    if (provider.getRegistrationState().equals(RegistrationState.REGISTERING))
                     {
                         this.sendError(new RegistrationTimeoutException(),
                             e.getActionCommand() != null ? e.getActionCommand() : "");
+                    }
+                    else if (provider.getRegistrationState().equals(RegistrationState.REGISTERED))
+                    {
+                        // print details of all registered accounts
+                        printRegisteredAccounts();
                     }
                 }
             }

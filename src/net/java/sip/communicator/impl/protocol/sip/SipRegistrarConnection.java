@@ -67,7 +67,7 @@ public class SipRegistrarConnection
     * expire or otherwise put - the number of seconds we wait before re-
     * registering.
     */
-    private static final int DEFAULT_REGISTRATION_EXPIRATION = 600;
+    public static final int DEFAULT_REGISTRATION_EXPIRATION = 300;
 
     /**
     * The amount of time (in seconds) that registration take to expire or
@@ -85,6 +85,11 @@ public class SipRegistrarConnection
     * The timer we use for rescheduling registrations.
     */
     private Timer reRegisterTimer = new Timer();
+
+    /**
+     * Granted expiration
+     */
+    private int grantedRegistrationExpiration = -1;
 
     /**
     * A copy of our last sent register request. (used when unregistering)
@@ -241,6 +246,18 @@ public class SipRegistrarConnection
                                 null);
 
         Request request;
+        try
+        {
+            if(logger.isDebugEnabled())
+                logger.debug("Registering..., dns proxy lookup");
+
+            sipProvider.getConnection().reset();
+        }
+        catch (Exception exc)
+        {
+            logger.error("Failed init proxy lookup in register" , exc);
+        }
+
         try
         {
             //We manage the Call ID Header ourselves.The rest will be handled
@@ -426,7 +443,7 @@ public class SipRegistrarConnection
         else
         {
             int scheduleTime = grantedExpiration;
-
+            grantedRegistrationExpiration = grantedExpiration;
             // registration schedule interval can be forced to keep alive
             // with setting property KEEP_ALIVE_METHOD to register and
             // setting the interval with property KEEP_ALIVE_INTERVAL
@@ -438,6 +455,7 @@ public class SipRegistrarConnection
                 sipProvider.getAccountID().getAccountPropertyString(
                     KEEP_ALIVE_METHOD);
 
+            /** removed 25 registration keep alive **/
             if((keepAliveMethod != null &&
                 keepAliveMethod.equalsIgnoreCase("register")))
             {
@@ -858,16 +876,29 @@ public class SipRegistrarConnection
         else if (response.getStatusCode() == Response.TRYING) {
             //do nothing
         }
-        //401 UNAUTHORIZED,
         //407 PROXY_AUTHENTICATION_REQUIRED,
-        //403 FORBIDDEN
-        else if (response.getStatusCode() == Response.UNAUTHORIZED
-                || response.getStatusCode()
-                                == Response.PROXY_AUTHENTICATION_REQUIRED
-                || response.getStatusCode() == Response.FORBIDDEN)
+        //401 UNAUTHORIZED
+        else if (response.getStatusCode() ==
+            Response.PROXY_AUTHENTICATION_REQUIRED ||
+                response.getStatusCode() == Response.UNAUTHORIZED)
         {
             processAuthenticationChallenge(
                     clientTransaction, response, sourceProvider);
+            processed = true;
+        }
+        //403 FORBIDDEN
+        else if (response.getStatusCode() == Response.FORBIDDEN)
+        {
+            int registrationStateReason =
+                RegistrationStateChangeEvent.REASON_NOT_SPECIFIED;
+
+            this.setRegistrationState(
+                RegistrationState.CONNECTION_FAILED
+                , registrationStateReason
+                , "Received an error while trying to register. "
+                + "Server returned error:" + response.getReasonPhrase()
+            );
+
             processed = true;
         }
         else if (response.getStatusCode() == Response.INTERVAL_TOO_BRIEF)
@@ -1271,5 +1302,10 @@ public class SipRegistrarConnection
                 + registrarName);
         }
         return ourSipAddressOfRecord;
+    }
+
+    public int getGrantedRegistrationExpiration()
+    {
+        return grantedRegistrationExpiration;
     }
 }

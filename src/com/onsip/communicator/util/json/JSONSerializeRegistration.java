@@ -83,7 +83,7 @@ public class JSONSerializeRegistration
         Map<String,String> map = new HashMap<String,String>();
 
         map.put("new_state", "error");
-        map.put("full_error", t.toString());
+        map.put("message", t.toString());
         map.put("aor", userId);
         map.put("expires", "");
         map.put("display_name", "");
