@@ -9,6 +9,7 @@ package net.java.sip.communicator.impl.protocol.sip;
 import gov.nist.javax.sip.header.*;
 import gov.nist.javax.sip.header.extensions.*;
 import gov.nist.javax.sip.message.*;
+import gov.nist.javax.sip.stack.SIPTransactionStack;
 
 import java.net.*;
 import java.text.*;
@@ -393,7 +394,16 @@ public class SipMessageFactory
     {
         Response response
             = this.wrappedFactory.createResponse(statusCode, request);
+
+        extractAndApplyRecordRouteHeaders(statusCode,
+            (SIPRequest) request, response);
+
         extractAndApplyDialogToTag((SIPRequest)request, response);
+        if (logger.isDebugEnabled())
+        {
+            logger.debug("---> request ---> " + request);
+            logger.debug("---> response ---> " + response);
+        }
         return (Response)attachScSpecifics(response);
     }
 
@@ -414,6 +424,42 @@ public class SipMessageFactory
     {
         Response response = this.wrappedFactory.createResponse(responseParam);
         return (Response)attachScSpecifics(response);
+    }
+
+    private void extractAndApplyRecordRouteHeaders(int statusCode,
+        SIPRequest request, Response response)
+    {
+        ServerTransaction tran = (ServerTransaction)request.getTransaction();
+
+        //be extra cautious
+        if(tran == null)
+        {
+            return;
+        }
+        boolean hasRR = response.getHeaders(RecordRouteHeader.NAME).hasNext();
+
+        try
+        {
+            // response already has the Record Route Headers
+            // and we are in dialog
+            if (!hasRR && request.hasToTag())
+            {
+                ListIterator<?> iterator =
+                    request.getHeaders(RecordRouteHeader.NAME);
+                Header h = null;
+                while (iterator.hasNext())
+                {
+                    h = (RecordRouteHeader) iterator.next();
+                    Header c = (RecordRouteHeader) h.clone();
+                    response.addHeader(c);
+                }
+            }
+        }
+        catch(Exception e)
+        {
+            if (logger.isDebugEnabled())
+                logger.debug("Failed to copy Route Headers from request", e);
+        }
     }
 
     /**
@@ -522,7 +568,6 @@ public class SipMessageFactory
         {
             message.setHeader(userAgentHeader);
         }
-
         return message;
     }
 
@@ -797,6 +842,38 @@ public class SipMessageFactory
         if (replacesHeader != null)
         {
             invite.setHeader(replacesHeader);
+        }
+
+        // Allow Header
+        Iterator<String> supportedMethods
+            = protocolProvider.getSupportedMethods().iterator();
+
+        while(supportedMethods.hasNext())
+        {
+            String method = supportedMethods.next();
+
+            if(method.equals(Request.SUBSCRIBE))
+                continue;
+
+            if(method.equals(Request.PUBLISH))
+                continue;
+
+            if(method.equals(Request.INFO))
+                continue;
+
+            if(method.equals(Request.MESSAGE))
+                continue;
+
+            try
+            {
+                invite.addHeader(
+                    headerFactory.createAllowHeader(method));
+            }
+            catch (ParseException ex)
+            {
+                // shouldn't matter
+                logger.error("Failed to create Allow header", ex);
+            }
         }
 
         return invite;

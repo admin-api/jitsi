@@ -9,6 +9,8 @@ package net.java.sip.communicator.impl.protocol.sip;
 import gov.nist.javax.sip.header.*;
 import gov.nist.javax.sip.header.extensions.*;
 
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.net.*;
 import java.text.*;
 import java.util.*;
@@ -17,6 +19,9 @@ import javax.sip.*;
 import javax.sip.address.*;
 import javax.sip.header.*;
 import javax.sip.message.*;
+import javax.swing.Timer;
+
+import com.onsip.communicator.impl.applet.call.DTMFHandler;
 
 import net.java.sip.communicator.service.protocol.*;
 import net.java.sip.communicator.service.protocol.Contact;
@@ -91,6 +96,14 @@ public class OperationSetBasicTelephonySipImpl
         protocolProvider.registerMethodProcessor(Request.BYE, this);
         protocolProvider.registerMethodProcessor(Request.REFER, this);
         protocolProvider.registerMethodProcessor(Request.NOTIFY, this);
+        /**
+         * oren@onsip
+         * We're handling the UPDATE because the original path delivers
+         * a 501 NOT_IMPLEMENTED causing our freeswitch parking server
+         * to send a BYE and hangup the call. Sending a 405 METHOD_NOT_IMPLEMENTED
+         * keeps the call alive.
+         */
+        protocolProvider.registerMethodProcessor(Request.UPDATE, this);
 
         protocolProvider.registerEvent("refer");
     }
@@ -351,6 +364,11 @@ public class OperationSetBasicTelephonySipImpl
 
         boolean processed = false;
 
+        if (requestMethod != null)
+        {
+            logger.info("Got Request code for method : " + requestMethod);
+        }
+
         // INVITE
         if (requestMethod.equals(Request.INVITE))
         {
@@ -405,7 +423,13 @@ public class OperationSetBasicTelephonySipImpl
                 logger.debug("received NOTIFY");
             processed = processNotify(serverTransaction, request);
         }
-
+        // UPDATE
+        else if (requestMethod.equals(Request.UPDATE))
+        {
+            if (logger.isDebugEnabled())
+                logger.debug("received UPDATE");
+            processed = processUpdate(serverTransaction, request);
+        }
         return processed;
     }
 
@@ -454,6 +478,13 @@ public class OperationSetBasicTelephonySipImpl
         SipProvider sourceProvider = (SipProvider) responseEvent.getSource();
 
         int responseStatusCode = response.getStatusCode();
+        CallPeerSipImpl callPeer = null;
+
+        if (method != null)
+        {
+          logger.info("Got response code " + responseStatusCode + " for method : " + method);
+        }
+
         boolean processed = false;
         switch (responseStatusCode)
         {
@@ -502,7 +533,6 @@ public class OperationSetBasicTelephonySipImpl
                 processed = true;
             }
             break;
-
         // 401 UNAUTHORIZED
         case Response.UNAUTHORIZED:
         case Response.PROXY_AUTHENTICATION_REQUIRED:
@@ -510,10 +540,106 @@ public class OperationSetBasicTelephonySipImpl
                 sourceProvider);
             processed = true;
             break;
+        // 404 NOT_FOUND
+        case Response.NOT_FOUND:
+            /**
+             * oren@onsip:
+             * We're sort of handling this case generically.
+             * The original behavior would have set the
+             * peer state to FAILED which in turn displays
+             * an error message in the UI. We, therefore,
+             * explicitly set state to UNKNOWN so that
+             * no message is passed on to the end user.
+             * This response code WAS delivered by proxy
+             * in the process of doing call-setup using
+             * click-to-call.
+             */
+            callPeer = activeCallsRepository.
+                findCallPeer(clientTransaction.getDialog());
+            if (method.equals(Request.NOTIFY))
+            {
+                if (callPeer != null)
+                {
+                    callPeer.setState(CallPeerState.UNKNOWN, "");
+                }
+            }
+            else
+            {
+                if (callPeer != null)
+                {
+                    callPeer.setState(CallPeerState.FAILED,
+                        response.getReasonPhrase());
+                }
+            }
+            processed = true;
+            break;
+        // 501 NOT_IMPLEMENTED
+        case Response.NOT_IMPLEMENTED:
+            /**
+             * oren@onsip:
+             * We're sort of handling this case generically.
+             * The original behavior would have set the
+             * peer state to FAILED which in turn displays
+             * an error message in the UI. We, therefore,
+             * explicitly set state to UNKNOWN so that
+             * no message is passed on to the end user.
+             */
+            callPeer = activeCallsRepository.
+                findCallPeer(clientTransaction.getDialog());
+            if (method.equals(Request.NOTIFY))
+            {
+                if (callPeer != null)
+                {
+                    callPeer.setState(CallPeerState.UNKNOWN, "");
+                }
+            }
+            else
+            {
+                if (callPeer != null)
+                {
+                    callPeer.setState(CallPeerState.FAILED,
+                        response.getReasonPhrase());
+                }
+            }
+            processed = true;
+            break;
+         // 481 NOT_FOUND
+        case Response.CALL_OR_TRANSACTION_DOES_NOT_EXIST:
+            /**
+             * oren@onsip:
+             * We're sort of handling this case generically.
+             * The original behavior would have set the
+             * peer state to FAILED which in turn displays
+             * an error message in the UI. We, therefore,
+             * explicitly set state to UNKNOWN so that
+             * no message is passed on to the end user.
+             * This response code WILL be delivered by proxy
+             * in the process of doing call-setup using
+             * click-to-call.
+             */
+            callPeer = activeCallsRepository.
+                findCallPeer(clientTransaction.getDialog());
+            if (method.equals(Request.NOTIFY))
+            {
+                if (callPeer != null)
+                {
+                    callPeer.setState(CallPeerState.UNKNOWN, "");
+                }
+            }
+            else
+            {
+                if (callPeer != null)
+                {
+                    callPeer.setState(CallPeerState.FAILED,
+                        response.getReasonPhrase());
+                }
+            }
+            processed = true;
+            break;
         case Response.REQUEST_TERMINATED:
             {
-                CallPeerSipImpl callPeer = activeCallsRepository.
-                        findCallPeer(clientTransaction.getDialog());
+                callPeer = activeCallsRepository.
+                    findCallPeer(clientTransaction.getDialog());
                 if (callPeer != null)
                 {
                     String reasonPhrase = response.getReasonPhrase();
@@ -625,6 +751,7 @@ public class OperationSetBasicTelephonySipImpl
                 || (responseStatusCodeRange == 5)
                 || (responseStatusCodeRange == 6))
             {
+
                 String reason = response.getReasonPhrase();
 
                 WarningHeader warningHeader
@@ -1616,6 +1743,46 @@ public class OperationSetBasicTelephonySipImpl
     }
 
     /**
+     * Processes a specific <tt>Request.UPDATE</tt> request, but sends back
+     * a 405 METHOD_NOT_ALLOWED
+     *
+     * @param serverTransaction the <tt>ServerTransaction</tt> containing the
+     * <tt>Request.UPDATE</tt> request
+     * @param notifyRequest the <tt>Request.UPDATE</tt> request to be processed
+     *
+     * @return <tt>true</tt> if we have processed/consumed the request and
+     * <tt>false</tt> otherwise.
+     */
+    private boolean processUpdate(ServerTransaction serverTransaction,
+        Request updateRequest)
+    {
+        // METHOD_NOT_ALLOWED
+        Response notAllowed;
+        try
+        {
+            notAllowed = messageFactory.createResponse(Response.METHOD_NOT_ALLOWED, updateRequest);
+            serverTransaction.sendResponse(notAllowed);
+        }
+        catch (ParseException ex)
+        {
+            String message = "Failed to create METHOD_NOT_ALLOWED response to UPDATE.";
+
+            logger.error(message, ex);
+            return false;
+        }
+        catch (Exception ex)
+        {
+            String message =
+                "Failed to send METHOD_NOT_ALLOWED response to refer UPDATE request.";
+
+            logger.error(message, ex);
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
      * Tracks the state changes of a specific <tt>Call</tt> and sends a
      * session-terminating NOTIFY request to the <tt>Dialog</tt> which referred
      * to the call in question as soon as the outcome of the refer is
@@ -2005,12 +2172,25 @@ public class OperationSetBasicTelephonySipImpl
                 OperationFailedException.INTERNAL_ERROR, ex, logger);
         }
 
-        //transferee should already be on hold by now but let's make sure he is
-        //just in case user changed default settings and we are still getting
-        //media from him.
-        putOnHold(transferee);
+        CallPeerState transferTargetState = transferTarget.getState();
+        if (!(transferTargetState.equals(CallPeerState.ON_HOLD_LOCALLY) ||
+            transferTargetState.equals(CallPeerState.ON_HOLD_MUTUALLY)))
+        {
+            putOnHold(transferTarget);
+        }
 
-        putOnHold(transferTarget);
+        /*
+         *  Transferee should already be on hold by now but let's make sure he is
+         *  just in case user changed default settings and we are still getting
+         *  media from him.
+         */
+
+        CallPeerState transfeeTargetState = transferee.getState();
+        if (!(transfeeTargetState.equals(CallPeerState.ON_HOLD_LOCALLY) ||
+            transfeeTargetState.equals(CallPeerState.ON_HOLD_MUTUALLY)))
+        {
+            putOnHold(transferee);
+        }
 
         transfer(transferee, targetAddress);
     }
