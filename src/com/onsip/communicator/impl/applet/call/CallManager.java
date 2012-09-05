@@ -270,6 +270,11 @@ public class CallManager extends CallPeerAdapter
                     else
                     {
                         basicTelephony.putOffHold(peer);
+                        boolean callOnMute = basicTelephony.isMute(peer.getCall());
+                        if (peer.isMute() != callOnMute)
+                        {
+                            basicTelephony.setMute(call, callOnMute);
+                        }
                     }
                 }
             }

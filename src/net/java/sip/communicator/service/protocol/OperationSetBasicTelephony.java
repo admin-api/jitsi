@@ -217,6 +217,20 @@ public interface OperationSetBasicTelephony<T extends ProtocolProviderService>
     public void setMute(Call call, boolean mute);
 
     /**
+     * Gets the mute state of the <tt>Call</tt>.
+     * <p>
+     * Muting audio streams sent from the call is implementation specific
+     * and one of the possible approaches to it is sending silence.
+     * </p>
+     *
+     * @param call the <tt>Call</tt> whose mute state is to be retrieved
+     * @return mute <tt>true</tt> if the call stream is muted to
+     * <tt>peers</tt>; otherwise, <tt>false</tt>
+     */
+    public boolean isMute(Call call);
+
+
+    /**
      * Returns the protocol provider that this operation set belongs to.
      *
      * @return a reference to the <tt>ProtocolProviderService</tt> that created

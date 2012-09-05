@@ -6,6 +6,8 @@
  */
 package net.java.sip.communicator.impl.protocol.sip.sdp;
 
+import gov.nist.javax.sdp.fields.AttributeField;
+
 import java.io.*;
 import java.net.*;
 import java.net.URI;
@@ -1247,6 +1249,42 @@ public class SdpUtils
             for (MediaDirection value : MediaDirection.values())
                 if (value.toString().equals(attrName))
                     return value;
+        }
+
+        return MediaDirection.SENDRECV;
+    }
+
+    public static MediaDirection getDirection( SessionDescription sdp )
+    {
+        @SuppressWarnings("unchecked") // legacy code from jain-sdp
+        Vector<Attribute> attributes  = sdp.getAttributes(false);
+
+        //default
+        if (attributes == null)
+            return MediaDirection.SENDRECV;
+
+        for (Attribute attribute : attributes)
+        {
+            if (attribute instanceof AttributeField)
+            {
+                String attrName = null;
+                try
+                {
+                    attrName = attribute.getName();
+                    if (attrName == null)
+                        continue;
+                }
+                catch (SdpParseException e)
+                {
+                    //can't happen (checkout the jain-sdp code if you wish)
+                    if (logger.isDebugEnabled())
+                        logger.debug("The impossible has just occurred!", e);
+                }
+
+                for (MediaDirection value : MediaDirection.values())
+                    if (value.toString().equals(attrName))
+                        return value;
+            }
         }
 
         return MediaDirection.SENDRECV;

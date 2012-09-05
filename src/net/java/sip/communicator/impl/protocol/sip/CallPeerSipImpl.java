@@ -188,6 +188,7 @@ public class CallPeerSipImpl
      *
      * @return the address string URI of the local party.
      */
+    @Override
     public String getLocalURI()
     {
         String uri = "";
@@ -219,10 +220,12 @@ public class CallPeerSipImpl
      *
      * @return the address URI string of the remote party.
      */
+    @Override
     public String getRemoteURI()
     {
         String uri = "";
         Dialog dialog = this.getDialog();
+
         if (dialog != null)
         {
             if (dialog.getRemoteParty() != null &&
@@ -289,6 +292,7 @@ public class CallPeerSipImpl
      *
      * @return a String containing a name for that peer.
      */
+    @Override
     public String getDisplayName()
     {
         String displayName = getPeerAddress().getDisplayName();
@@ -368,7 +372,7 @@ public class CallPeerSipImpl
      * communication with this call peer.
      */
     public Dialog getDialog()
-    {        
+    {
         return jainSipDialog;
     }
 
@@ -445,6 +449,7 @@ public class CallPeerSipImpl
      * @return the <tt>Contact</tt> corresponding to this peer or null
      * if no particular contact has been associated.
      */
+    @Override
     public Contact getContact()
     {
         // if this peer has no call, most probably it means
@@ -571,7 +576,7 @@ public class CallPeerSipImpl
     public void processReInvite(ServerTransaction serverTransaction)
     {
         Request invite = serverTransaction.getRequest();
-        
+
         setLatestInviteTransaction(serverTransaction);
 
         // SDP description may be in ACKs - bug report Laurent Michel
@@ -582,9 +587,9 @@ public class CallPeerSipImpl
 
         Response response = null;
         try
-        {            
+        {
             response = messageFactory.createResponse(Response.OK, invite);
-         
+
             /*
              * If the local peer represented by the Call of this CallPeer is
              * acting as a conference focus, it must indicate it in its Contact
@@ -617,19 +622,6 @@ public class CallPeerSipImpl
                             serverTransaction, Response.SERVER_INTERNAL_ERROR);
             return;
         }
-        
-        reevalRemoteHoldStatus();
-
-        /**
-         * Oren F: 06/21/2012
-         * Fixes a bug with HOLD. The use case is as follows:
-         * Set peer ON HOLD.
-         * Peer sets call ON HOLD.
-         * Peer takes call OFF HOLD.
-         * The audio stream passes continues to pass through.
-         */
-        CallPeerMediaHandlerSipImpl mediaHandler = getMediaHandler();
-        mediaHandler.setLocallyOnHold(mediaHandler.isLocallyOnHold());
 
         fireRequestProcessed(invite, response);
     }
@@ -816,6 +808,19 @@ public class CallPeerSipImpl
                 return;
             }
         }
+
+        reevalRemoteHoldStatus();
+
+        /**
+         * Oren F: 06/21/2012
+         * Fixes a bug with HOLD. The use case is as follows:
+         * Set peer ON HOLD.
+         * Peer sets call ON HOLD.
+         * Peer takes call OFF HOLD.
+         * The audio stream passes continues to pass through.
+         */
+        CallPeerMediaHandlerSipImpl mediaHandler = getMediaHandler();
+        mediaHandler.setLocallyOnHold(mediaHandler.isLocallyOnHold());
 
         // change status
         CallPeerState peerState = getState();
@@ -1552,7 +1557,7 @@ public class CallPeerSipImpl
                     ex,
                     logger);
         }
-        
+
         getProtocolProvider().sendInDialogRequest(
                 getJainSipProvider(), invite, dialog);
     }
@@ -1571,12 +1576,12 @@ public class CallPeerSipImpl
         throws OperationFailedException
     {
         try
-        {                        
+        {
             ClientTransaction inviteTran
                 = (ClientTransaction) getLatestInviteTransaction();
             Request invite = inviteTran.getRequest();
 
-                        
+
             // Content-Type
             ContentTypeHeader contentTypeHeader
                 = getProtocolProvider()
@@ -1587,7 +1592,7 @@ public class CallPeerSipImpl
                     getMediaHandler().createOffer(),
                     contentTypeHeader);
 
-            
+
             /*
              * If the local peer represented by the Call of this CallPeer is
              * acting as a conference focus, it must indicate it in its Contact
@@ -1596,7 +1601,7 @@ public class CallPeerSipImpl
             reflectConferenceFocus(invite);
 
             inviteTran.sendRequest();
-                        
+
             if (logger.isDebugEnabled())
                 logger.debug("sent request:\n" + inviteTran.getRequest());
         }

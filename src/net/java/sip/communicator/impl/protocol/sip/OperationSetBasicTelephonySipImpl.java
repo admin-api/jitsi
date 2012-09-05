@@ -283,6 +283,7 @@ public class OperationSetBasicTelephonySipImpl
     public synchronized void putOffHold(CallPeer peer)
         throws OperationFailedException
     {
+        CallSipImpl call = (CallSipImpl) peer.getCall();
         putOnHold(peer, false);
     }
 
@@ -2072,6 +2073,25 @@ public class OperationSetBasicTelephonySipImpl
         CallSipImpl sipCall = (CallSipImpl)call;
 
         sipCall.setMute(mute);
+    }
+
+    /**
+     * Gets the mute state of the <tt>Call</tt>.
+     * <p>
+     * Muting audio streams sent from the call is implementation specific
+     * and one of the possible approaches to it is sending silence.
+     * </p>
+     *
+     * @param call the <tt>Call</tt> whose mute state is to be retrieved
+     * @return mute <tt>true</tt> if the call stream is muted to
+     * <tt>peers</tt>; otherwise, <tt>false</tt>
+     */
+    @Override
+    public boolean isMute(Call call)
+    {
+        CallSipImpl sipCall = (CallSipImpl)call;
+
+        return sipCall.isMute();
     }
 
     /**

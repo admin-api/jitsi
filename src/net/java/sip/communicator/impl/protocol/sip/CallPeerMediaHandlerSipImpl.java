@@ -7,6 +7,8 @@
 package net.java.sip.communicator.impl.protocol.sip;
 
 import ch.imvs.sdes4j.srtp.*;
+import gov.nist.javax.sdp.fields.AttributeField;
+import gov.nist.javax.sdp.fields.SDPField;
 
 import java.net.*;
 import java.util.*;
@@ -476,6 +478,14 @@ public class CallPeerMediaHandlerSipImpl
             // determine the direction that we need to announce.
             MediaDirection remoteDirection
                 = SdpUtils.getDirection(mediaDescription);
+            /**
+             * Oren F. 07/31/2012
+             * Hold doesn't always come in as a media attribute (ie 'm=').
+             * It can be set in an AttributeField (ie 'a=')
+             */
+            remoteDirection =
+                remoteDirection.and(SdpUtils.getDirection(offer));
+
             MediaDirection direction
                 = devDirection.getDirectionForAnswer(remoteDirection);
 
@@ -924,6 +934,14 @@ public class CallPeerMediaHandlerSipImpl
             //determine the direction that we need to announce.
             MediaDirection remoteDirection
                 = SdpUtils.getDirection(mediaDescription);
+
+            /**
+             * Oren F. 07/31/2012
+             * Hold doesn't always come in as a media attribute (ie 'm=').
+             * It can be set in an AttributeField (ie 'a=')
+             */
+            remoteDirection =
+                remoteDirection.and(SdpUtils.getDirection(answer));
 
             MediaDirection direction
                 = devDirection.getDirectionForAnswer(remoteDirection);

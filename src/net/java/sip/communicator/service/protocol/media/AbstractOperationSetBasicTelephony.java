@@ -153,6 +153,22 @@ public abstract class AbstractOperationSetBasicTelephony
     }
 
     /**
+     * Gets the mute state of the <tt>Call</tt>.
+     * <p>
+     * Muting audio streams sent from the call is implementation specific
+     * and one of the possible approaches to it is sending silence.
+     * </p>
+     *
+     * @param call the <tt>Call</tt> whose mute state is to be retrieved
+     * @return mute <tt>true</tt> if the call stream is muted to
+     * <tt>peers</tt>; otherwise, <tt>false</tt>
+     */
+    public boolean isMute(Call call)
+    {
+        return false;
+    }
+
+    /**
      * Creates a new <tt>Recorder</tt> which is to record the specified
      * <tt>Call</tt> (into a file which is to be specified when starting the
      * returned <tt>Recorder</tt>).

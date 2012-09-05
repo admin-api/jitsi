@@ -11,7 +11,9 @@ import net.java.sip.communicator.service.protocol.Call;
 import net.java.sip.communicator.service.protocol.CallPeer;
 import net.java.sip.communicator.service.protocol.CallPeerState;
 import net.java.sip.communicator.service.protocol.CallState;
+import net.java.sip.communicator.service.protocol.OperationSetBasicTelephony;
 import net.java.sip.communicator.service.protocol.ProtocolProviderFactory;
+import net.java.sip.communicator.service.protocol.ProtocolProviderService;
 import net.java.sip.communicator.util.Logger;
 
 import com.onsip.communicator.impl.applet.AppletActivator;
@@ -182,7 +184,17 @@ public class JSONSerializeCall
          * @return <tt>true</tt> if an audio stream is being sent to this
          *         peer and it is currently mute; <tt>false</tt>, otherwise
          */
-        boolean peerIsMute = peer.isMute();
+
+        ProtocolProviderService provider = peer.getProtocolProvider();
+        boolean onCallHold = false;
+        if (provider != null && peer.getCall() != null)
+        {
+            OperationSetBasicTelephony<?> basicTelephony =
+                provider.getOperationSet(OperationSetBasicTelephony.class);
+            onCallHold = basicTelephony.isMute(peer.getCall());
+        }
+
+        boolean peerIsMute = peer.isMute() || onCallHold;
         peerMap.put("mute", "" + peerIsMute);
 
         /**
