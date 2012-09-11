@@ -1,13 +1,14 @@
 package com.onsip.communicator.impl.applet.utils;
 
+import java.util.Iterator;
+import java.util.Map;
+
 import com.onsip.communicator.impl.applet.AppletActivator;
 
 import net.java.sip.communicator.service.notification.*;
-import net.java.sip.communicator.service.notification.SoundNotificationHandler;
-import org.jitsi.service.resources.ResourceManagementService;
-import net.java.sip.communicator.plugin.notificationwiring.*;
+import net.java.sip.communicator.service.protocol.Call;
+import net.java.sip.communicator.service.protocol.CallPeer;
 import net.java.sip.communicator.util.Logger;
-
 
 public class NotificationManager
 {    
@@ -37,71 +38,44 @@ public class NotificationManager
         
     private final static Logger logger
         = Logger.getLogger(NotificationManager.class);
-    
-    /**
-     * The incoming message sound id.
-     */
-    public static String INCOMING_MESSAGE_PATH;
+
 
     /**
-     * The incoming file sound id.
+     * Checks if the contained call is a conference call.
+     *
+     * @param call the call to check
+     * @return <code>true</code> if the contained <tt>Call</tt> is a conference
+     * call, otherwise - returns <code>false</code>.
      */
-    public static String INCOMING_FILE_PATH;
+    public static boolean isConference(Call call)
+    {
+        // If we're the focus of the conference.
+        if (call.isConferenceFocus())
+            return true;
 
-    /**
-     * The outgoing call sound id.
-     */
-    public static String OUTGOING_CALL_PATH;
+        // If one of our peers is a conference focus, we're in a
+        // conference call.
+        Iterator<? extends CallPeer> callPeers = call.getCallPeers();
 
-    /**
-     * The incoming call sound id.
-     */
-    public static String INCOMING_CALL_PATH;
+        while (callPeers.hasNext())
+        {
+            CallPeer callPeer = callPeers.next();
 
-    /**
-     * The busy sound id.
-     */
-    public static String BUSY_PATH;
+            if (callPeer.isConferenceFocus())
+                return true;
+        }
 
-    /**
-     * The dialing sound id.
-     */
-    public static String DIALING_PATH;
-
-    /**
-     * The sound id of the sound played when call security is turned on.
-     */
-    public static String CALL_SECURITY_ON_PATH;
-
-    /**
-     * The sound id of the sound played when a call security error occurs.
-     */
-    public static String CALL_SECURITY_ERROR_PATH;
-
-    /**
-     * The hang up sound id.
-     */
-    public static String HANG_UP_PATH;
-    
-    static void initRingTones() 
-    {      
-        ResourceManagementService resources = AppletActivator.getResources();
-        
-        INCOMING_MESSAGE_PATH = resources.getSoundPath("INCOMING_MESSAGE");
-        INCOMING_FILE_PATH = resources.getSoundPath("INCOMING_FILE");
-        OUTGOING_CALL_PATH = resources.getSoundPath("OUTGOING_CALL");        
-        INCOMING_CALL_PATH = resources.getSoundPath("INCOMING_CALL");
-        BUSY_PATH = resources.getSoundPath("BUSY");
-        DIALING_PATH = resources.getSoundPath("DIAL");
-        CALL_SECURITY_ON_PATH = resources.getSoundPath("CALL_SECURITY_ON");
-        CALL_SECURITY_ERROR_PATH= resources.getSoundPath("CALL_SECURITY_ERROR");
-        HANG_UP_PATH = resources.getSoundPath("HANG_UP");        
+        // the call can have two peers at the same time and there is no one
+        // is conference focus. This is situation when some one has made an
+        // attended transfer and has transfered us. We have one call with two
+        // peers the one we are talking to and the one we have been transfered
+        // to. And the first one is been hanguped and so the call passes through
+        // conference call fo a moment and than go again to one to one call.
+        return call.getCallPeerCount() > 1;
     }
     
     public static void registerGuiNotifications()
     {
-        initRingTones();
-        
         NotificationService notificationService
             = AppletActivator.getNotificationService();
 
@@ -110,40 +84,9 @@ public class NotificationManager
             logger.error("Notification Service is null");
             return;
         }
-        
-        // Register incoming message notifications.
-        /**
-        notificationService.registerDefaultNotificationForEvent(
-                INCOMING_MESSAGE,
-                NotificationService.ACTION_POPUP_MESSAGE,
-                null,
-                null);
-        **/
-        /**
-        notificationService.registerDefaultNotificationForEvent(
-                INCOMING_MESSAGE,
-                NotificationService.ACTION_SOUND,
-                SoundProperties.INCOMING_MESSAGE,
-                null);
-         **/
-        // Register incoming call notifications.
-        /**
-        notificationService.registerDefaultNotificationForEvent(
-                INCOMING_CALL,
-                NotificationService.ACTION_POPUP_MESSAGE,
-                null,
-                null);
-        **/
-        
+
         SoundNotificationAction inCallSoundHandler
             = new SoundNotificationAction(SoundProperties.INCOMING_CALL, 2000);
-
-        /**
-        SoundNotificationHandler inCallSoundHandler
-            = notificationService
-                .createSoundNotificationHandler(INCOMING_CALL_PATH,
-                                                2000);
-        **/
 
         notificationService.registerDefaultNotificationForEvent(
                 NotificationManager.INCOMING_CALL,
@@ -153,9 +96,6 @@ public class NotificationManager
         SoundNotificationAction outCallSoundHandler
             = new SoundNotificationAction(SoundProperties.OUTGOING_CALL, 3000);
 
-        //notificationService
-          //      .createSoundNotificationHandler(NotificationManager.OUTGOING_CALL,
-           //                                     3000);
 
         notificationService.registerDefaultNotificationForEvent(
                 NotificationManager.OUTGOING_CALL,
@@ -165,12 +105,6 @@ public class NotificationManager
         SoundNotificationAction busyCallSoundHandler
             = new SoundNotificationAction(SoundProperties.BUSY, 3000);
 
-        /**
-        SoundNotificationHandler busyCallSoundHandler
-            = notificationService
-                .createSoundNotificationHandler(BUSY_PATH, 1);
-        **/
-
         notificationService.registerDefaultNotificationForEvent(
                 NotificationManager.BUSY_CALL,
                 busyCallSoundHandler);
@@ -179,46 +113,19 @@ public class NotificationManager
         SoundNotificationAction dialSoundHandler
             = new SoundNotificationAction(SoundProperties.DIALING, 0);
 
-        /**
-        SoundNotificationHandler dialSoundHandler
-            = notificationService
-                .createSoundNotificationHandler(DIALING_PATH, 0);
-        **/
-
         notificationService.registerDefaultNotificationForEvent(
                 NotificationManager.DIALING,
                 dialSoundHandler);
 
         // Register the hangup sound notification.
         SoundNotificationAction hangupSoundHandler
-            = new SoundNotificationAction(SoundProperties.HANG_UP, 0);
+            = new SoundNotificationAction(SoundProperties.HANG_UP, -1);
 
-        /**
-        SoundNotificationHandler hangupSoundHandler
-            = notificationService
-                .createSoundNotificationHandler(HANG_UP_PATH, -1);
-        **/
 
         notificationService.registerDefaultNotificationForEvent(
                 NotificationManager.HANG_UP,
                 hangupSoundHandler);
 
-        // Register proactive notifications.
-        /**
-        notificationService.registerDefaultNotificationForEvent(
-                PROACTIVE_NOTIFICATION,
-                NotificationService.ACTION_POPUP_MESSAGE,
-                null,
-                null);
-        **/
-        // Register warning message notifications.
-        /**
-        notificationService.registerDefaultNotificationForEvent(
-                SECURITY_MESSAGE,
-                NotificationService.ACTION_POPUP_MESSAGE,
-                null,
-                null);
-        **/
         // Register sound notification for security state on during a call.
         notificationService.registerDefaultNotificationForEvent(
                 NotificationManager.CALL_SECURITY_ON,
@@ -233,72 +140,86 @@ public class NotificationManager
                 SoundProperties.CALL_SECURITY_ERROR,
                 null);
 
-        // Register sound notification for incoming files.
-        /** 
-        notificationService.registerDefaultNotificationForEvent(
-                INCOMING_FILE,
-                NotificationService.ACTION_POPUP_MESSAGE,
-                null,
-                null);
-        **/
         notificationService.registerDefaultNotificationForEvent(
                 NotificationManager.INCOMING_FILE,
                 NotificationAction.ACTION_SOUND,
                 SoundProperties.INCOMING_FILE,
                 null);
 
-        // Register notification for saved calls.
-        /**
-        notificationService.registerDefaultNotificationForEvent(
-            CALL_SAVED,
-            NotificationService.ACTION_POPUP_MESSAGE,
-            null,
-            null);
-        **/
+    }
+
+    /**
+     * Fires a notification for the given event type through the
+     * <tt>NotificationService</tt>. The event type is one of the static
+     * constants defined in this class.
+     *
+     * @param eventType the event type for which we want to fire a notification
+     * @return A reference to the fired notification to stop it.
+     */
+    public static NotificationData fireNotification(String eventType)
+    {
+        NotificationService notificationService
+            = AppletActivator.getNotificationService();
+
+        if(notificationService == null)
+            return null;
+
+        return notificationService.fireNotification(eventType);
     }
 
     /**
      * Fires a message notification for the given event type through the
      * <tt>NotificationService</tt>.
-     * 
+     *
      * @param eventType the event type for which we fire a notification
      * @param messageTitle the title of the message
      * @param message the content of the message
+     * @return A reference to the fired notification to stop it.
      */
-    public static void fireNotification(String eventType,
+    public static NotificationData fireNotification(String eventType,
                                         String messageTitle,
                                         String message)
-    {        
+    {
         NotificationService notificationService
             = AppletActivator.getNotificationService();
 
         if(notificationService == null)
-            return;
+            return null;
 
-        notificationService.fireNotification(   eventType,
+        return notificationService.fireNotification(eventType,
                                                 messageTitle,
                                                 message,
                                                 null,
                                                 null);
     }
 
-
     /**
-     * Fires a notification for the given event type through the
-     * <tt>NotificationService</tt>. The event type is one of the static
-     * constants defined in this class.
-     * 
-     * @param eventType the event type for which we want to fire a notification
+     * Fires a message notification for the given event type through the
+     * <tt>NotificationService</tt>.
+     *
+     * @param eventType the event type for which we fire a notification
+     * @param messageTitle the title of the message
+     * @param message the content of the message
+     * @param extra additional event data for external processing
+     * @return A reference to the fired notification to stop it.
      */
-    public static void fireNotification(String eventType)
+    public static NotificationData fireNotification(String eventType,
+                                        String messageTitle,
+                                        String message,
+                                        Map<String,String> extra)
     {
         NotificationService notificationService
             = AppletActivator.getNotificationService();
 
         if(notificationService == null)
-            return;
+            return null;
 
-        notificationService.fireNotification(eventType);
+        return notificationService.fireNotification(eventType,
+                                                    messageTitle,
+                                                    message,
+                                                    extra,
+                                                    null,
+                                                    null);
     }
 
     /**
@@ -310,7 +231,7 @@ public class NotificationManager
     public static void stopSound(NotificationData data)
     {
         NotificationService notificationService
-        = NotificationWiringActivator.getNotificationService();
+        = AppletActivator.getNotificationService();
 
         if(notificationService == null)
             return;
@@ -329,4 +250,5 @@ public class NotificationManager
             }
         }
     }
+
 }

@@ -672,4 +672,28 @@ public class CallPeerGTalkImpl
 
         protocolProvider.getConnection().sendPacket(candidatesIQ);
     }
+
+    public String getRemoteURI()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    public String getLocalURI()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    public boolean isServer()
+    {
+        // TODO Auto-generated method stub
+        return false;
+    }
+
+    public String getId()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
 }

@@ -3,6 +3,30 @@ Bundle-Description: The core of Jitsi as a stand-alone library
 Bundle-Name: libjitsi
 Bundle-Vendor: jitsi.org
 Bundle-Version: 0.0.1
+Bundle-NativeCode: lib/mac/libjnspeex.jnilib;
+ lib/mac/libjnportaudio.jnilib;
+ lib/mac/libjnawtrenderer.jnilib;
+ lib/mac/libjng722.jnilib; processor=x86_64; osname=Mac OS X,
+ lib/mac/libjnspeex.jnilib;
+ lib/mac/libjnportaudio.jnilib;
+ lib/mac/libjnawtrenderer.jnilib;
+ lib/mac/libjng722.jnilib; processor=x86; osname=Mac OS X,
+ lib/windows-64/jnspeex.dll;
+ lib/windows-64/jnportaudio.dll;
+ lib/windows-64/jnawtrenderer.dll;
+ lib/windows-64/jng722.dll; processor=x86_64;
+ osname=windowsxp; osname=windowsvista; osname=windows7; osname=windows2003; osname=windows2008,
+ lib/windows/jnspeex.dll;
+ lib/windows/jnportaudio.dll;
+ lib/windows/jnawtrenderer.dll;
+ lib/windows/jng722.dll; processor=x86;
+ osname=windowsxp; osname=windowsvista; osname=windows7; osname=windows2003; osname=windows2008,
+ lib/linux/libjspeex.so;
+ lib/linux/libjnportaudio.so;
+ lib/linux/libjg722.so; processor=x86; osname=linux,
+ lib/linux-64/libjspeex.so;
+ lib/linux-64/libjnportaudio.so;
+ lib/linux-64/libjg722.so; processor=x86_64; osname=linux
 Export-Package: javax.media,
  javax.media.protocol,
  org.jitsi.impl.neomedia,

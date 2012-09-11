@@ -112,17 +112,17 @@ public class NotificationActivator
      * 
      * @return the <tt>SystrayService</tt> obtained from the bundle context
      */
-    public static SystrayService getSystray()
-    {
-        if (systrayService == null)
-        {
-            ServiceReference serviceReference = bundleContext
-                .getServiceReference(SystrayService.class.getName());
-
-            systrayService = (SystrayService) bundleContext
-                .getService(serviceReference);
-        }
-
-        return systrayService;
-    }
+//    public static SystrayService getSystray()
+//    {
+//        if (systrayService == null)
+//        {
+//            ServiceReference serviceReference = bundleContext
+//                .getServiceReference(SystrayService.class.getName());
+//
+//            systrayService = (SystrayService) bundleContext
+//                .getService(serviceReference);
+//        }
+//
+//        return systrayService;
+//    }
 }

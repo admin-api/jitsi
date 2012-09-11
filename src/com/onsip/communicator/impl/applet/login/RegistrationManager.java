@@ -571,13 +571,13 @@ public class RegistrationManager
         System.setProperty(ProtocolProviderFactory.IS_USE_UPNP,
                 Boolean.FALSE.toString());
 
-        // System.setProperty(
-            // ProtocolProviderFactory.PREFERRED_CLEAR_PORT_PROPERTY_NAME,
-                // "7778");
+        System.setProperty(
+            ProtocolProviderFactory.PREFERRED_CLEAR_PORT_PROPERTY_NAME,
+                "8978");
 
-        // System.setProperty(
-            // ProtocolProviderFactory.PREFERRED_SECURE_PORT_PROPERTY_NAME,
-                // "8889");
+        System.setProperty(
+            ProtocolProviderFactory.PREFERRED_SECURE_PORT_PROPERTY_NAME,
+                "8979");
 
         /**
          * These settings which enable ZRTP caused Polycoms to start emitting
@@ -590,7 +590,15 @@ public class RegistrationManager
          * Setting PROXY_AUTO_CONFIG to "true" forces DNS look ups to
          * follow the path of NAPTR to SRV to A or AAAA
          */
-        table.put(ProtocolProviderFactory.PROXY_AUTO_CONFIG, "false");
+        table.put(ProtocolProviderFactory.PROXY_AUTO_CONFIG, "true");
+
+        /**
+         * Disable video
+         */
+        table.put("net.java.sip.communicator.impl.neomedia.VIDEO_CONFIG_DISABLED", "true");
+        table.put("net.java.sip.communicator.impl.neomedia.h264config.DISABLED", "true");
+        table.put("net.java.sip.communicator.impl.neomedia.zrtpconfig.DISABLED", "true");
+        table.put("net.java.sip.communicator.impl.neomedia.callrecordingconfig.DISABLED", "true");
 
         return table;
     }

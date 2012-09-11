@@ -51,15 +51,15 @@ public class PopupMessageNotificationHandlerImpl
         byte[] icon,
         Object tag)
     {
-        SystrayService systray = NotificationActivator.getSystray();
-        if(systray == null)
-            return;
-
-        if(!StringUtils.isNullOrEmpty(message))
-            systray.showPopupMessage(
-                new PopupMessage(title, message, icon, tag));
-        else
-            logger.error("Message is null or empty!",
-                new Throwable("Null or empty message"));
+//        SystrayService systray = NotificationActivator.getSystray();
+//        if(systray == null)
+//            return;
+//
+//        if(!StringUtils.isNullOrEmpty(message))
+//            systray.showPopupMessage(
+//                new PopupMessage(title, message, icon, tag));
+//        else
+//            logger.error("Message is null or empty!",
+//                new Throwable("Null or empty message"));
     }
 }

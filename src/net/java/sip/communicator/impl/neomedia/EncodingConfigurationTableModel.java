@@ -16,6 +16,7 @@ import org.jitsi.impl.neomedia.*;
 import org.jitsi.impl.neomedia.codec.*;
 import org.jitsi.impl.neomedia.format.*;
 import org.jitsi.service.neomedia.*;
+import org.jitsi.service.neomedia.codec.EncodingConfiguration;
 import org.jitsi.service.neomedia.format.*;
 
 /**
@@ -251,7 +252,7 @@ public class EncodingConfigurationTableModel
         for (int i = 0; i < count; i++)
         {
             encodingConfiguration.setPriority(encodings[i], priorities[i]);
-            encodingConfiguration.setPriorityConfig(encodings[i], priorities[i]);
+            //encodingConfiguration.setPriorityConfig(encodings[i], priorities[i]);
         }
     }
 
@@ -270,7 +271,7 @@ public class EncodingConfigurationTableModel
             // property in order to have more reactive user interface.
             fireTableCellUpdated(rowIndex, columnIndex);
 
-            encodingConfiguration.setPriorityConfig(encoding, priority);
+            //encodingConfiguration.setPriorityConfig(encoding, priority);
         }
     }
 }

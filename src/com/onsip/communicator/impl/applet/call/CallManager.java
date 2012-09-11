@@ -8,9 +8,11 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.WeakHashMap;
 
 import javax.swing.Timer;
 
+import net.java.sip.communicator.service.notification.NotificationData;
 import net.java.sip.communicator.service.protocol.Call;
 import net.java.sip.communicator.service.protocol.CallPeer;
 import net.java.sip.communicator.service.protocol.CallPeerState;
@@ -63,6 +65,13 @@ public class CallManager extends CallPeerAdapter
      * else do blind
      */
     public static enum TransferType {BLIND, ATTENDED, SEAMLESS};
+
+    /**
+     * Stores notification references to stop them if a notification has expired
+     * (e.g. to stop the dialing sound).
+     */
+    private Map<Call, NotificationData> callNotifications =
+        new WeakHashMap<Call, NotificationData>();
 
     private Object callEventSource = null;
     private Object callPeerEventSource = null;
@@ -740,10 +749,8 @@ public class CallManager extends CallPeerAdapter
 
             if (bHungUp)
             {
-                com.onsip.communicator.impl.applet.utils.
-                    NotificationManager.fireNotification
-                        (com.onsip.communicator.impl.applet.utils.
-                            NotificationManager.HANG_UP);
+                NotificationManager.fireNotification(
+                    NotificationManager.HANG_UP);
             }
         }
         catch (Exception e)
@@ -1018,10 +1025,10 @@ public class CallManager extends CallPeerAdapter
             {
                 throw new CallNotFoundException();
             }
-            com.onsip.communicator.impl.applet.utils.
-                NotificationManager.fireNotification
-                    (com.onsip.communicator.impl.applet.utils.
-                        NotificationManager.INCOMING_CALL);
+
+            callNotifications.put(call,
+                NotificationManager.fireNotification(
+                    NotificationManager.INCOMING_CALL));
 
             String callId = call.getCallID();
 
@@ -1076,10 +1083,6 @@ public class CallManager extends CallPeerAdapter
         Call call = null;
         try
         {
-            NotificationManager.stopSound(NotificationManager.HANG_UP);
-            NotificationManager.stopSound(NotificationManager.INCOMING_CALL);
-            NotificationManager.stopSound(NotificationManager.OUTGOING_CALL);
-            NotificationManager.stopSound(NotificationManager.BUSY_CALL);
 
             /*
              * retrieve the call that ended
@@ -1089,6 +1092,9 @@ public class CallManager extends CallPeerAdapter
 
             logger.info("Call Ended - Call ID " +  callId +
                 " - Found " + call.getCallPeerCount() + " call peers");
+
+            // Stop all telephony related sounds.
+            NotificationManager.stopSound(callNotifications.get(call));
 
             CallPeerSerMapStore[] peerSer =
                 CallPeerSerMapStore.get(callId);
@@ -1209,6 +1215,7 @@ public class CallManager extends CallPeerAdapter
     @Override
     public void peerStateChanged(CallPeerChangeEvent evt)
     {
+        Call call = null;
         CallPeer sourcePeer = null;
         try
         {
@@ -1232,21 +1239,22 @@ public class CallManager extends CallPeerAdapter
             {
                 if (sourcePeer != null)
                 {
+                    call = sourcePeer.getCall();
                     logger.debug("JSON serialize Peer ID " + sourcePeer.getPeerID());
-                    if (sourcePeer.getCall() != null)
+                    if (call != null)
                     {
-                        callId = sourcePeer.getCall().getCallID();
+                        callId = call.getCallID();
                     }
                     String callSetupId = CallToCallSetupIdStore.get(callId);
                     if (callSetupId != null)
                     {
                         jsonSer = JSONSerializeCall.JSONSerialize
-                            (sourcePeer.getCall(), sourcePeer, callSetupId);
+                            (call, sourcePeer, callSetupId);
                     }
                     else
                     {
                         jsonSer = JSONSerializeCall.JSONSerialize
-                            (sourcePeer.getCall(), sourcePeer);
+                            (call, sourcePeer);
                     }
                 }
             }
@@ -1264,6 +1272,11 @@ public class CallManager extends CallPeerAdapter
             {
                 logger.debug("Initiating call... ");
             }
+            else
+            {
+                NotificationManager.stopSound(
+                    callNotifications.get(call));
+            }
 
             if (newState == CallPeerState.ALERTING_REMOTE_SIDE
                 //if we were already in state CONNECTING_WITH_EARLY_MEDIA the server
@@ -1272,36 +1285,26 @@ public class CallManager extends CallPeerAdapter
                 && oldState != CallPeerState.CONNECTING_WITH_EARLY_MEDIA)
             {
                 logger.debug("Alerting remote side, should play SOUND");
-                NotificationManager
-                    .fireNotification(NotificationManager.OUTGOING_CALL);
+                callNotifications.put(call,
+                    NotificationManager.fireNotification(
+                        NotificationManager.OUTGOING_CALL));
             }
             else if (newState == CallPeerState.BUSY)
             {
-                NotificationManager.stopSound(NotificationManager.OUTGOING_CALL);
-
-                NotificationManager.fireNotification
-                    (NotificationManager.BUSY_CALL);
-
-                // BUSY
-                bFireEvent = true;
-
                 // We start the busy sound only if we're in a simple call.
-                //if (!renderer.getCallPanel().isConference())
-                //{
-                    /// NotificationManager.fireNotification(
-                        // NotificationManager.BUSY_CALL);
-                //}
+                if (!NotificationManager.isConference(call))
+                {
+                    bFireEvent = true;
+
+                    callNotifications.put(call,
+                        NotificationManager.fireNotification(
+                            NotificationManager.BUSY_CALL));
+                }
             }
             else if (newState == CallPeerState.CONNECTING_INCOMING_CALL ||
                 newState == CallPeerState.CONNECTING_INCOMING_CALL_WITH_MEDIA)
             {
-                if (!CallPeerState.isOnHold(oldState))
-                {
-                    NotificationManager
-                        .stopSound(NotificationManager.OUTGOING_CALL);
-                    NotificationManager
-                        .stopSound(NotificationManager.INCOMING_CALL);
-                }
+                // place holder
             }
             else if (newState == CallPeerState.CONNECTING_WITH_EARLY_MEDIA)
             {
@@ -1309,20 +1312,10 @@ public class CallManager extends CallPeerAdapter
                  * This means a call with early media. make sure that we are not
                  * playing local notifications any more.
                  */
-                NotificationManager
-                    .stopSound(NotificationManager.OUTGOING_CALL);
             }
             else if (newState == CallPeerState.CONNECTED)
             {
-                if (!CallPeerState.isOnHold(oldState))
-                {
-                    NotificationManager
-                        .stopSound(NotificationManager.OUTGOING_CALL);
-                    NotificationManager
-                        .stopSound(NotificationManager.INCOMING_CALL);
-                }
-
-                // CONNECTED
+                // fire a client side event on CONNECTED
                 bFireEvent = true;
             }
             else if (newState == CallPeerState.DISCONNECTED)
@@ -1333,12 +1326,11 @@ public class CallManager extends CallPeerAdapter
             {
                 // The call peer should be already removed from the call
                 // see CallPeerRemoved
-
-                // FAILED
                 bFireEvent = false;
             }
             else if (newState == CallPeerState.REFERRED)
             {
+                // fire a client side event on transfer
                 bFireEvent = true;
             }
             else if (CallPeerState.isOnHold(newState))

@@ -2536,4 +2536,27 @@ public class ProtocolProviderServiceSipImpl
             || ListeningPoint.TLS.equalsIgnoreCase(transport)
             || ListeningPoint.TCP.equalsIgnoreCase(transport);
     }
+
+    public String getAddressOfRecord()
+    {
+        if (sipRegistrarConnection != null)
+        {
+            if (sipRegistrarConnection.getAddressOfRecord() != null &&
+                sipRegistrarConnection.getAddressOfRecord().getURI() != null)
+            {
+                return sipRegistrarConnection.
+                    getAddressOfRecord().getURI().toString();
+            }
+        }
+        return"";
+    }
+
+    public int getGrantedRegistrationExpiration()
+    {
+        if (sipRegistrarConnection != null)
+        {
+            return sipRegistrarConnection.getGrantedRegistrationExpiration();
+        }
+        return -1;
+    }
 }
