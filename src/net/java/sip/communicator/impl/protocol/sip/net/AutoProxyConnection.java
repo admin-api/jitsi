@@ -369,6 +369,7 @@ public class AutoProxyConnection
     {
         super.reset();
         state = State.New;
+        this.socketAddress = null;
 
         //determine the hostname of the proxy for autodetection:
         //1) server part of the user ID
