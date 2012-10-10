@@ -265,16 +265,29 @@ public class CallManager extends CallPeerAdapter
                 {
                     if (hold)
                     {
+                        /**
+                         * Oren F.
+                         * Rework the functionality of hold so that its
+                         * behavior mimics a Polycom. That is:
+                         *
+                         * If on local hold:
+                         * - set call off mute (the underlying jitsi core will
+                         *   set individual peers on mute)
+                         * - do not let end users control mute functionality.
+                         *
+                         * If on remote hold:
+                         * - end users can control mute as they'd like
+                         */
+                        boolean callOnMute = basicTelephony.isMute(call);
+                        if (callOnMute)
+                        {
+                            basicTelephony.setMute(call, false);
+                        }
                         basicTelephony.putOnHold(peer);
                     }
                     else
                     {
                         basicTelephony.putOffHold(peer);
-                        boolean callOnMute = basicTelephony.isMute(peer.getCall());
-                        if (peer.isMute() != callOnMute)
-                        {
-                            basicTelephony.setMute(call, callOnMute);
-                        }
                     }
                 }
             }

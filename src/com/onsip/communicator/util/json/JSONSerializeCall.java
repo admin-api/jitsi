@@ -194,8 +194,7 @@ public class JSONSerializeCall
             onCallHold = basicTelephony.isMute(peer.getCall());
         }
 
-        boolean peerIsMute = peer.isMute() || onCallHold;
-        peerMap.put("mute", "" + peerIsMute);
+        peerMap.put("mute", "" + onCallHold);
 
         /**
          * Gets the number of <tt>ConferenceMember</tt>s currently known to this
