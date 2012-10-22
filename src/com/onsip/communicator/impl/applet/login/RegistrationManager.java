@@ -22,7 +22,6 @@ import com.onsip.communicator.impl.applet.call.CallManager;
 import com.onsip.communicator.impl.applet.exceptions.RegistrationTimeoutException;
 import com.onsip.communicator.util.json.JSONSerializeRegistration;
 
-import org.jitsi.service.configuration.ConfigurationService;
 import net.java.sip.communicator.service.protocol.AccountID;
 import net.java.sip.communicator.service.protocol.OperationFailedException;
 import net.java.sip.communicator.service.protocol.OperationSetBasicTelephony;
@@ -64,16 +63,6 @@ public class RegistrationManager
      * registration
      */
     private CallManager callManager = null;
-
-    /**
-     * If the applet crashes, the javascript client will attempt to reload
-     * it. Once the applet is running again, a call to the
-     * <tt><reregister/tt> function is immediately executed. In a failover
-     * scenario, this flag is set to true, and is passed through
-     * to the client which can act accordingly (i.e notify
-     * the user of a crash, remove alert of a crash, etc).
-     */
-    private boolean isFailOver = false;
 
     public RegistrationManager(CallManager callManager)
     {
@@ -126,16 +115,6 @@ public class RegistrationManager
     public void setRegistrationEventSource(Object handler)
     {
         this.registrationEventSource = handler;
-    }
-
-    /**
-     * Getter. Tells us if we're in recovery mode
-     *
-     * @return "true" or "false"
-     */
-    public String isTryingToRecover()
-    {
-        return String.valueOf(this.isFailOver);
     }
 
     public void registrationStateChanged(RegistrationStateChangeEvent evt)
@@ -220,7 +199,6 @@ public class RegistrationManager
         }
         finally
         {
-            this.isFailOver = false;
             this.registrationTimer = null;
             REGISTRATION_COUNTER = 0;
         }
@@ -235,7 +213,6 @@ public class RegistrationManager
         }
         catch(Exception ex)
         {
-            this.isFailOver = false;
             this.registrationTimer = null;
             REGISTRATION_COUNTER = 0;
         }
@@ -340,75 +317,12 @@ public class RegistrationManager
         return null;
     }
 
-    public synchronized void reregister()
-    {
-        try
-        {
-            this.isFailOver = true;
-            ProtocolProviderFactory sipProviderFactory = getProviderFactory();
-            ArrayList<AccountID> accounts =
-                sipProviderFactory.getRegisteredAccounts();
-            Iterator<AccountID> i = accounts.iterator();
-            while (i.hasNext())
-            {
-                AccountID account = i.next();
-                if (account != null)
-                {
-                    sipProviderFactory.loadAccount(account);
-
-                    Map<String, String> sipAccountProperties =
-                        account.getAccountProperties();
-
-                    String userId =
-                        sipAccountProperties
-                            .get(ProtocolProviderFactory.USER_ID);
-                    String password =
-                        sipAccountProperties.get("ENCRYPTED_PASSWORD");
-
-                    ProtocolProviderService provider =
-                        AppletActivator.getPrototocolProviderService(userId);
-
-                    if (provider == null)
-                    {
-                        logger.info(ProtocolProviderService.class.toString()
-                            + " is NULL, can't reregister");
-                        throw new Exception(
-                            "Unable to register, no account found");
-                    }
-
-                    /* add listener */
-                    provider.addRegistrationStateChangeListener(this);
-
-                    if (password == null)
-                    {
-                        throw new Exception(
-                            "Password is null, can't reregister");
-                    }
-
-                    logger.debug("Init SecurityAuthority");
-                    SecurityAuthority auth =
-                        new SecurityAuthorityImpl(password.toCharArray());
-
-                    logger.debug("Try to register");
-                    provider.register(auth);
-                }
-            }
-        }
-        catch (Exception e)
-        {
-            logger.error("Exception :: reregister : ");
-            logger.error(e, e);
-        }
-    }
-
     public synchronized void register(String userId, String displayName,
         String authUsername, String password, String serverAddress,
         String proxyAddress, String proxyPort)
     {
         try
         {
-            this.isFailOver = false;
-
             if (REGISTRATION_COUNTER == 0)
             {
                 REGISTRATION_COUNTER++;

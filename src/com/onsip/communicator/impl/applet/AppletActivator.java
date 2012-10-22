@@ -317,11 +317,6 @@ public class AppletActivator
         registrationManager.unregister(userId);
     }
 
-    public void reregister()
-    {
-        registrationManager.reregister();
-    }
-
     public void register(String userId, String displayName,
             String authUsername, String password)
     {

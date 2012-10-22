@@ -33,7 +33,6 @@ public class JSONSerializeRegistration
         map.put("expires", reg.getGrantedExpiration(provider));
         map.put("display_name", reg.getDisplayName(provider));
         map.put("proxy", reg.getProxyAddress(provider));
-        map.put("recovery_mode", reg.isTryingToRecover());
 
         map.put("volume-input",
             String.valueOf(AppletActivator.getInputVolume()));
