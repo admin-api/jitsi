@@ -15,12 +15,12 @@ Bundle-NativeCode: lib/mac/libjnspeex.jnilib;
  lib/windows-64/jnportaudio.dll;
  lib/windows-64/jnawtrenderer.dll;
  lib/windows-64/jng722.dll; processor=x86_64;
- osname=windowsxp; osname=windowsvista; osname=windows7; osname=windows2003; osname=windows2008,
+ osname=windowsxp; osname=windowsvista; osname=windows7; osname=windows8; osname=windows2003; osname=windows2008,
  lib/windows/jnspeex.dll;
  lib/windows/jnportaudio.dll;
  lib/windows/jnawtrenderer.dll;
  lib/windows/jng722.dll; processor=x86;
- osname=windowsxp; osname=windowsvista; osname=windows7; osname=windows2003; osname=windows2008,
+ osname=windowsxp; osname=windowsvista; osname=windows7; osname=windows8; osname=windows2003; osname=windows2008,
  lib/linux/libjspeex.so;
  lib/linux/libjnportaudio.so;
  lib/linux/libjg722.so; processor=x86; osname=linux,

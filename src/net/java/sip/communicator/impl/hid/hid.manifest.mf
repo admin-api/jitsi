@@ -6,9 +6,9 @@ Bundle-Version: 0.0.1
 Bundle-NativeCode: lib/mac/libhid.jnilib; processor=x86_64; osname=Mac OS X,
  lib/mac/libhid.jnilib; processor=x86; osname=Mac OS X,
  lib/windows-64/hid.dll; processor=x86_64;
- osname=windowsxp; osname=windowsvista; osname=windows7; osname=windows2003; osname=windows2008,
+ osname=windowsxp; osname=windowsvista; osname=windows7; osname=windows8; osname=windows2003; osname=windows2008,
  lib/windows/hid.dll; processor=x86;
- osname=windowsxp; osname=windowsvista; osname=windows7; osname=windows2003; osname=windows2008,
+ osname=windowsxp; osname=windowsvista; osname=windows7; osname=windows8; osname=windows2003; osname=windows2008,
  lib/linux/libhid.so; processor=x86; osname=linux,
  lib/linux/libhid.so; processor=x86_64; osname=linux
 System-Bundle: yes
