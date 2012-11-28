@@ -353,20 +353,54 @@ public class RegistrationManager
 
             AccountID account = null;
 
-            account = this.getAccount(userId);
-
-            if (account != null)
+            /**
+             * Patched 11/28/2012, Oren F.
+             * This patch is meant to deal with a bizarre edge case
+             * discovered on a single test box running Windows 7.
+             * installAccount is called, persisting some of the
+             * account details, but in the process references
+             * a Jitsi Bundle which the Java cache deems to be
+             * out of date. So Java cache goes out and retrieves
+             * the bundle, but temporarily disables the Service
+             * associated with the Bundle. That causes a null reference
+             * exception and an error suggesting that our user agent
+             * is now in some weird / illegal state.
+             *
+             */
+            for (int i=0; i < 3; i++)
             {
-                logger.debug("Since the account exists, we'll just load it");
-                account.setAccountProperties(sipAccountProperties);
-                sipProviderFactory.loadAccount(account);
-                logger.debug("Done loading it");
-            }
-            else
-            {
-                logger.debug("The account does not exists, so we'll install anew " + userId);
-                sipProviderFactory.installAccount(userId, sipAccountProperties);
-                logger.debug("The account installed");
+                account = this.getAccount(userId);
+                if (account != null)
+                {
+                    logger.debug("Since the account exists, we'll just load it");
+                    account.setAccountProperties(sipAccountProperties);
+                    sipProviderFactory.loadAccount(account);
+                    logger.debug("Done loading it");
+                    break;
+                }
+                else
+                {
+                    try
+                    {
+                        logger.debug("The account does not exists, so we'll install anew " + userId);
+                        sipProviderFactory.installAccount(userId, sipAccountProperties);
+                        logger.debug("The account installed");
+                        break;
+                    }
+                    catch(Exception ex)
+                    {
+                        /**
+                         * An error here puts us into that illegal state where the
+                         * account is partially filled. When we loop over,
+                         * the getAccount function will return a valid account. At least
+                         * that's what seems to be happening. We put the thread to sleep
+                         * briefly so that Java cache will go out and retrieve
+                         * or refresh the Service Bundle (credentials.jar)
+                         */
+                        logger.debug("install account failed, try set account again");
+                        Thread.sleep(1000);
+                    }
+                }
             }
 
             ProtocolProviderService provider =
