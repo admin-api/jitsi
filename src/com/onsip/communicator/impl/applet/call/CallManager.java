@@ -599,7 +599,9 @@ public class CallManager extends CallPeerAdapter
                 peer.addCallPeerListener(this);
             }
 
+            logger.info("CallManager.answer " + call.getCallID());
             CallManager.answer(call, this);
+            logger.info("call.addCallChangeListener");
             call.addCallChangeListener(this);
         }
         catch (Exception e)
@@ -620,6 +622,7 @@ public class CallManager extends CallPeerAdapter
         ActionListener answerTask = new ActionListener() {
             public void actionPerformed(ActionEvent evt) {
                 callEventTimers.remove(incoming.getCallID());
+                logger.info("launch answer call thread");
                 new AnswerCallThread(incoming, callManager).start();
             }
         };
@@ -631,6 +634,7 @@ public class CallManager extends CallPeerAdapter
         {
             delay = 500;
         }
+        logger.info("start answer timer");
         Timer tAnswer = new Timer(delay, answerTask);
         tAnswer.setRepeats(false);
         tAnswer.start();
