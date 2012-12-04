@@ -600,7 +600,7 @@ public class CallManager extends CallPeerAdapter
             }
 
             logger.info("CallManager.answer " + call.getCallID());
-            CallManager.answer(call, this);
+            this.answer(call, this);
             logger.info("call.addCallChangeListener");
             call.addCallChangeListener(this);
         }
@@ -617,8 +617,12 @@ public class CallManager extends CallPeerAdapter
      *
      * @param incoming the incoming call
      */
-    public static void answer(final Call incoming, final CallManager callManager)
+    public void answer(Call incoming, CallManager callManager)
     {
+        logger.info("in call answer");
+        new AnswerCallThread(incoming, callManager).start();
+
+        /**
         ActionListener answerTask = new ActionListener() {
             public void actionPerformed(ActionEvent evt) {
                 callEventTimers.remove(incoming.getCallID());
@@ -626,6 +630,8 @@ public class CallManager extends CallPeerAdapter
                 new AnswerCallThread(incoming, callManager).start();
             }
         };
+
+        logger.info("callEventTimer get incoming call Id");
 
         Long tIncoming = callEventTimers.get(incoming.getCallID());
 
@@ -638,6 +644,7 @@ public class CallManager extends CallPeerAdapter
         Timer tAnswer = new Timer(delay, answerTask);
         tAnswer.setRepeats(false);
         tAnswer.start();
+        **/
     }
 
     private static class AnswerCallThread
