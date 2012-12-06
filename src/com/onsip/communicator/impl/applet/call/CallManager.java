@@ -207,6 +207,10 @@ public class CallManager extends CallPeerAdapter
             logErr(new CallManagerException(
                 call, peer, "Error in mute, details: " + e.getMessage()),
                 Thread.currentThread().getStackTrace(), true);
+            try
+            {
+              e.printStackTrace();
+            } catch(Exception e2){}
         }
 
     }

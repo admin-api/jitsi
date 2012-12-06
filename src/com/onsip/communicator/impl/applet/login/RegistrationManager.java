@@ -367,7 +367,7 @@ public class RegistrationManager
              * is now in some weird / illegal state.
              *
              */
-            for (int i=0; i < 3; i++)
+            for (int i=1; i <= 3; i++)
             {
                 account = this.getAccount(userId);
                 if (account != null)
@@ -398,7 +398,8 @@ public class RegistrationManager
                          * or refresh the Service Bundle (credentials.jar)
                          */
                         logger.debug("install account failed, try set account again");
-                        Thread.sleep(1000);
+                        long t = 1000 * i;
+                        Thread.sleep(t);
                     }
                 }
             }
@@ -527,6 +528,8 @@ public class RegistrationManager
             ProtocolProviderFactory.PREFERRED_SECURE_PORT_PROPERTY_NAME,
                 "8979");
 
+        table.put(ProtocolProviderFactory.PREFERRED_TRANSPORT, "udp");
+
         /**
          * These settings which enable ZRTP caused Polycoms to start emitting
          * really odd noise at the start of the call
@@ -538,7 +541,7 @@ public class RegistrationManager
          * Setting PROXY_AUTO_CONFIG to "true" forces DNS look ups to
          * follow the path of NAPTR to SRV to A or AAAA
          */
-        table.put(ProtocolProviderFactory.PROXY_AUTO_CONFIG, "true");
+        table.put(ProtocolProviderFactory.PROXY_AUTO_CONFIG, "false");
 
         /**
          * Disable video
