@@ -283,7 +283,7 @@
         <!-- internal-target- compiles the entire project source tree -->
         <javac classpathref="compile.class.path" debug="false"
             deprecation="true" destdir="${dest}" nowarn="false"
-            source="1.5" target="1.5" memoryMaximumSize="400M" fork="true"
+            source="1.6" target="1.6" memoryMaximumSize="400M" fork="true"
             includeantruntime="false">
                 <src path="${src}"/>
                 <!-- <src path="${src2}"/> -->
@@ -676,7 +676,7 @@
         <delete failonerror="false">
             <fileset dir="${dest}" includes="net/java/sip/communicator/impl/version/*.class"/>
         </delete>
-        <javac classpathref="compile.class.path" destdir="${dest}" source="1.5" target="1.5" includeantruntime="false">
+        <javac classpathref="compile.class.path" destdir="${dest}" source="1.6" target="1.6" includeantruntime="false">
             <src path="${src}"/>
             <include name="net/java/sip/communicator/impl/version/NightlyBuildID.java" />
             <include name="net/java/sip/communicator/impl/version/VersionImpl.java" />

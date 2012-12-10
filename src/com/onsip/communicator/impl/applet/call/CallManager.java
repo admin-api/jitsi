@@ -621,31 +621,39 @@ public class CallManager extends CallPeerAdapter
      *
      * @param incoming the incoming call
      */
-    public void answer(final Call incoming, final CallManager callManager)
+    public void answer(Call incoming, CallManager callManager)
     {
-        logger.info("in call answer");
-
-        ActionListener answerTask = new ActionListener() {
-            public void actionPerformed(ActionEvent evt) {
-                callEventTimers.remove(incoming.getCallID());
-                logger.info("launch answer call thread");
-                new AnswerCallThread(incoming, callManager).start();
-            }
-        };
-
-        logger.info("callEventTimer get incoming call Id");
-
-        Long tIncoming = callEventTimers.get(incoming.getCallID());
-
-        int delay = 0;
-        if ((System.currentTimeMillis() - tIncoming.longValue()) < 500)
+        try
         {
-            delay = 500;
+            logger.info("in call answer " + incoming.getCallID());
+            Long tIncoming = callEventTimers.get(incoming.getCallID());
+
+            if (tIncoming != null)
+            {
+                if (System.currentTimeMillis() - tIncoming.longValue() < 500)
+                {
+                    try
+                    {
+                        logger.info(
+                            "Halt thread for a second, # callEventTimers = "
+                                + callEventTimers.size());
+                        Thread.sleep(500);
+                    }
+                    catch (InterruptedException e)
+                    {
+                        logger.error("InterruptedException :: answer : ");
+                        logger.error(e, e);
+                    }
+                }
+            }
+            logger.info("start answer timer");
+            new AnswerCallThread(incoming, callManager).start();
         }
-        logger.info("start answer timer");
-        Timer tAnswer = new Timer(delay, answerTask);
-        tAnswer.setRepeats(false);
-        tAnswer.start();
+        catch (Exception ex)
+        {
+            logger.error("Exception :: answer : ");
+            logger.error(ex, ex);
+        }
     }
 
     private static class AnswerCallThread
