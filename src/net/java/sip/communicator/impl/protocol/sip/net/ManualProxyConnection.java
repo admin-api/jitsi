@@ -114,5 +114,15 @@ public class ManualProxyConnection
         if(!ProtocolProviderServiceSipImpl.isValidTransport(transport))
             throw new IllegalArgumentException(
                 transport + " is not a valid SIP transport");
+        try
+        {
+            this.lookups = null;
+            this.getNextAddress();
+        }
+        catch (Exception e)
+        {
+            logger.error("Exception :: reset :");
+            logger.error(e, e);
+        }
     }
 }

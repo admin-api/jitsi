@@ -621,12 +621,10 @@ public class CallManager extends CallPeerAdapter
      *
      * @param incoming the incoming call
      */
-    public void answer(Call incoming, CallManager callManager)
+    public void answer(final Call incoming, final CallManager callManager)
     {
         logger.info("in call answer");
-        new AnswerCallThread(incoming, callManager).start();
 
-        /**
         ActionListener answerTask = new ActionListener() {
             public void actionPerformed(ActionEvent evt) {
                 callEventTimers.remove(incoming.getCallID());
@@ -648,7 +646,6 @@ public class CallManager extends CallPeerAdapter
         Timer tAnswer = new Timer(delay, answerTask);
         tAnswer.setRepeats(false);
         tAnswer.start();
-        **/
     }
 
     private static class AnswerCallThread

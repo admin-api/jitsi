@@ -6,6 +6,7 @@
  */
 package net.java.sip.communicator.impl.protocol.sip;
 
+import static net.java.sip.communicator.service.protocol.ProtocolProviderFactory.PROXY_AUTO_CONFIG;
 import gov.nist.javax.sip.address.*;
 import gov.nist.javax.sip.header.*;
 import gov.nist.javax.sip.message.*;
@@ -2464,11 +2465,20 @@ public class ProtocolProviderServiceSipImpl
                 return true;
 
             }
-            else if(connection.getNextAddress())
+            else
             {
-                sipRegistrarConnection.setTransport(connection.getTransport());
-                sipRegistrarConnection.register();
-                return true;
+                boolean bNextAddressOk = true;
+                if (this.getAccountID() != null &&
+                    this.getAccountID().getAccountPropertyBoolean(PROXY_AUTO_CONFIG, true))
+                {
+                    bNextAddressOk = connection.getNextAddress();
+                }
+                if (bNextAddressOk)
+                {
+                    sipRegistrarConnection.setTransport(connection.getTransport());
+                    sipRegistrarConnection.register();
+                }
+                return bNextAddressOk;
             }
         }
         catch (DnssecException e)

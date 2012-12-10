@@ -185,6 +185,45 @@ public class NetworkAddressManagerServiceImpl
                                           RANDOM_ADDR_DISC_PORT);
             localHost = localHostFinderSocket.getLocalAddress();
             localHostFinderSocket.disconnect();
+
+            /**
+             * This bit of magic is a workaround for the inadequacies of Oracle Java 1.7
+             * running on Mac Lion or Mountain Lion (10.7 and 10.8)
+             * Resolving localhost properly to a private ip address and hostname
+             * does not provide consistent behavior as it used to in Java 1.6
+             * supported by Apple's Java. Now we find ourselves in a situation where
+             * if the Parallel's Desktop is running on 10.7 then InetAddress returns
+             * the private address of the virtual nics. Or on Moutain Lion, if
+             * the Hostname is not provided in a way that Java likes it (i.e. with
+             * a .local or without a .local extension), then it just fails to return
+             * the private address.  This isn't specific to the plugin, it behaves the
+             * same way on the desktop.
+             */
+            if (localHost.isAnyLocalAddress())
+            {
+                if (intendedDestination instanceof Inet4Address)
+                {
+                    String ipV4 = System.getProperty("onsip.host_address");
+                    if (ipV4 != null && ipV4.length() > 0)
+                    {
+                        try
+                        {
+                            byte[] b = NetworkUtils.strToIPv4(ipV4);
+                            String host = System.getProperty("onsip.host_name");
+                            if (host != null && host.length() > 0)
+                            {
+                                logger.info("Setting address and host " + host + ", " + ipV4);
+                                InetAddress addr = InetAddress.getByAddress(host, b);
+                                localHost = addr;
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.error("onsip custom to deal with ip address", ex);
+                        }
+                    }
+                }
+            }
         }
 
         //windows socket implementations return the any address so we need to

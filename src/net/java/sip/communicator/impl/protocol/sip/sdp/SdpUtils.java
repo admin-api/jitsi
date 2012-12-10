@@ -6,7 +6,12 @@
  */
 package net.java.sip.communicator.impl.protocol.sip.sdp;
 
+import gov.nist.javax.sdp.SessionDescriptionImpl;
+import gov.nist.javax.sdp.TimeDescriptionImpl;
 import gov.nist.javax.sdp.fields.AttributeField;
+import gov.nist.javax.sdp.fields.ProtoVersionField;
+import gov.nist.javax.sdp.fields.SessionNameField;
+import gov.nist.javax.sdp.fields.TimeField;
 
 import java.io.*;
 import java.net.*;
@@ -135,6 +140,7 @@ public class SdpUtils
      * preinitialized <tt>s</tt>, <tt>v</tt>, and <tt>t</tt> parameters.
      * @throws OperationFailedException if the SDP creation failed
      */
+    @SuppressWarnings("unchecked")
     public static SessionDescription createSessionDescription(
                                    InetAddress              localAddress,
                                    String                   userName,
@@ -145,7 +151,80 @@ public class SdpUtils
 
         try
         {
-            sessDescr = sdpFactory.createSessionDescription();
+            /**
+            * This bit of magic is a workaround for the inadequacies of Oracle Java 1.7
+            * running on Mac Lion or Mountain Lion (10.7 and 10.8)
+            * Resolving localhost properly to a private ip address and hostname
+            * does not provide consistent behavior as it used to in Java 1.6
+            * supported by Apple's Java. Now we find ourselves in a situation where
+            * if the Parallel's Desktop is running on 10.7 then InetAddress returns
+            * the private address of the virtual nics. Or on Moutain Lion, if
+            * the Hostname is not provided in a way that Java likes it (i.e. with
+            * a .local or without a .local extension), then it just fails to return
+            * the private address.  This isn't specific to the plugin, it behaves the
+            * same way on the desktop.
+            */
+
+            String hostLocalIP = null;
+            String os = System.getProperty("os.name");
+            os = (os == null) ? "" : os.toLowerCase();
+            if (os.indexOf("mac os x") != -1)
+            {
+                String hostAddressTmp = System.getProperty("onsip.host_address");
+                String version = System.getProperty("os.version");
+                if (hostAddressTmp != null &&
+                    hostAddressTmp.length() > 0 &&
+                    (version.startsWith("10.7") || version.startsWith("10.8")))
+                {
+                    hostLocalIP = hostAddressTmp;
+                    sessDescr = new SessionDescriptionImpl();
+                    ProtoVersionField ProtoVersionField = new ProtoVersionField();
+                    ProtoVersionField.setVersion(0);
+                    sessDescr.setVersion(ProtoVersionField);
+
+                    Origin o1 = null;
+                    try
+                    {
+                        if (userName == null)
+                        {
+                            userName = System.getProperty("user.name");
+                            if (userName == null || userName.length() == 0)
+                            {
+                                userName = "sip-communicator";
+                            }
+                        }
+
+                        o1 =
+                            sdpFactory.createOrigin(userName, 0, 0, "IN",
+                                Connection.IP4, localAddress.getHostAddress());
+                    }
+                    catch (Exception e)
+                    {
+                        e.printStackTrace();
+                    }
+                    sessDescr.setOrigin(o1);
+
+                    SessionNameField sessionNameImpl = new SessionNameField();
+                    sessionNameImpl.setValue("-");
+                    sessDescr.setSessionName(sessionNameImpl);
+
+                    TimeDescriptionImpl timeDescriptionImpl = new TimeDescriptionImpl();
+                    TimeField timeImpl = new TimeField();
+                    timeImpl.setZero();
+                    timeDescriptionImpl.setTime(timeImpl);
+                    @SuppressWarnings("rawtypes")
+                    Vector times = new Vector();
+                    times.addElement(timeDescriptionImpl);
+                    sessDescr.setTimeDescriptions(times);
+                }
+            }
+            // end mac 10.7 and 10.8 hack
+
+            if (sessDescr == null)
+            {
+                hostLocalIP = localAddress.getHostAddress();
+                sessDescr = sdpFactory.createSessionDescription();
+            }
 
             //"v=0"
             Version v = sdpFactory.createVersion(0);
@@ -168,16 +247,22 @@ public class SdpUtils
 
             //o
             if (userName == null)
-                userName = "sip-communicator";
+            {
+                userName = System.getProperty("user.name");
+                if (userName == null || userName.length() == 0)
+                {
+                    userName = "sip-communicator";
+                }
+            }
 
             Origin o = sdpFactory.createOrigin(
-                userName, 0, 0, "IN", addrType, localAddress.getHostAddress());
+                userName, 0, 0, "IN", addrType, hostLocalIP);
 
             sessDescr.setOrigin(o);
 
             //c=
             Connection c = sdpFactory.createConnection(
-                "IN", addrType, localAddress.getHostAddress());
+                "IN", addrType, hostLocalIP);
 
             sessDescr.setConnection(c);
 

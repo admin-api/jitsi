@@ -12,6 +12,7 @@ import com.onsip.communicator.impl.applet.call.CallManager;
 import com.onsip.communicator.impl.applet.call.volume.InputVolumeControl;
 import com.onsip.communicator.impl.applet.call.volume.OutputVolumeControl;
 import com.onsip.communicator.impl.applet.login.RegistrationManager;
+import com.onsip.communicator.impl.applet.utils.LocalNetaddr;
 import com.onsip.communicator.impl.applet.utils.NotificationManager;
 
 import org.jitsi.service.audionotifier.AudioNotifierService;
@@ -81,6 +82,17 @@ public class AppletActivator
 
         callManager = new CallManager();
         registrationManager = new RegistrationManager(callManager);
+
+        try
+        {
+            LocalNetaddr.setConfigRoute();
+        }
+        catch(Exception ex)
+        {
+            // shouldn't happen, but you never know
+            logger.error("Exception :: start : LocalNetaddr.setConfigRoute ");
+            logger.error(ex, ex);
+        }
     }
 
     /**
