@@ -1,7 +1,5 @@
 package com.onsip.communicator.impl.applet;
 
-import java.io.IOException;
-
 import net.java.sip.communicator.util.Logger;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
@@ -17,7 +15,6 @@ import com.onsip.communicator.impl.applet.utils.NotificationManager;
 
 import org.jitsi.service.audionotifier.AudioNotifierService;
 import org.jitsi.service.configuration.ConfigurationService;
-import org.jitsi.service.libjitsi.LibJitsi;
 import org.jitsi.service.neomedia.MediaService;
 import org.jitsi.service.neomedia.MediaType;
 import org.jitsi.service.neomedia.MediaUseCase;
@@ -127,6 +124,7 @@ public class AppletActivator
                         m_context,
                         ConfigurationService.class);
         }
+
         return configurationService;
     }
 
@@ -433,6 +431,17 @@ public class AppletActivator
         outputVolumeControl.setVolume(level);
     }
 
+    public void setOutputVolume(Integer level, Boolean enableOnNotify)
+    {
+        if (outputVolumeControl == null)
+        {
+            outputVolumeControl =
+                new OutputVolumeControl(getMediaService());
+        }
+        setNotifyVolumeControl(enableOnNotify.booleanValue());
+        outputVolumeControl.setVolume(level);
+    }
+
     public static int getInputVolume()
     {
         if (inputVolumeControl == null)
@@ -451,6 +460,23 @@ public class AppletActivator
                 new OutputVolumeControl(getMediaService());
         }
         return outputVolumeControl.getLevel();
+    }
+
+    public void setNotifyVolumeControl(boolean enable)
+    {
+        try
+        {
+            getConfigurationService().
+                setProperty("net.java.sip.communicator.impl.neomedia.notifyvolumecontrol",
+                    enable);
+        }
+        catch(Exception ex)
+        {
+            logger.error("AppletActivator :: " +
+                "setNotifyVolumeControl : Error while enabling " +
+                    "notification volume control");
+            logger.error(ex, ex);
+        }
     }
 
     public String getDefaultAudioDevice()
