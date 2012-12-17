@@ -51,6 +51,11 @@
     <property name='build.slick' value='false' />
     <property name='compile.applet.nonessentials' value='true' />
 
+    <!-- these properties are specific to the target -> deploy -->
+    <property name="bundles.loc.default" value="/var/www/vhosts/com.onsip.lib/htdocs/jitsi" />
+    <property name="deploy.tar.name" value="deploy-jitsi-bundles.tar" />
+    <property name="deploy.tar.basedir" value="${bundles.loc.default}" />
+
     <!-- set the build label property and make it take the cc bild into account -->
     <condition property="build.label"
                value="nightly.${label}">
@@ -696,7 +701,9 @@
 
         <sip-communicator-version property="sip-communicator.version" />
         -->
+        <!--
         <echo message="Jitsi version 1.1" />
+        -->
     </target>
 
     <!--INIT-->
@@ -3054,4 +3061,27 @@
       </jar>
     </target>
 
+   <!-- help systems deploy these bundle with minimal steps -->
+   <target name="check-tar-props">
+     <condition property="build-tar-ok">
+       <and>
+         <available file="${deploy.tar.basedir}" type="dir"/>
+         <isset property="deploy.tar.name" />
+       </and>
+     </condition>
+   </target>
+
+   <target name="make-deploy-tar" if="build-tar-ok">
+     <echo message="creating tar file ${deploy.tar.name}" />
+     <tar destfile="${deploy.tar.name}" basedir="${deploy.tar.basedir}" />
+   </target>
+
+   <target name="deploy" depends="check-tar-props">
+     <taskdef name="deploy" classname="com.jnctn.ant.DeployBundleTask" />
+     <sequential>
+       <deploy releasepath="${bundles.loc.default}" />
+       <antcall target="rebuild" />
+       <antcall target="make-deploy-tar" />
+     </sequential>
+   </target>
 </project>
