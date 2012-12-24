@@ -1,3 +1,9 @@
+/*
+ * Jitsi, the OpenSource Java VoIP and Instant Messaging client.
+ *
+ * Distributable under LGPL license.
+ * See terms of license at gnu.org.
+ */
 package com.onsip.communicator.impl.applet;
 
 import net.java.sip.communicator.util.Logger;
@@ -12,6 +18,7 @@ import com.onsip.communicator.impl.applet.call.volume.OutputVolumeControl;
 import com.onsip.communicator.impl.applet.login.RegistrationManager;
 import com.onsip.communicator.impl.applet.utils.LocalNetaddr;
 import com.onsip.communicator.impl.applet.utils.NotificationManager;
+import com.onsip.communicator.impl.applet.utils.SoundProperties;
 
 import org.jitsi.service.audionotifier.AudioNotifierService;
 import org.jitsi.service.configuration.ConfigurationService;
@@ -20,6 +27,7 @@ import org.jitsi.service.neomedia.MediaType;
 import org.jitsi.service.neomedia.MediaUseCase;
 import org.jitsi.service.neomedia.device.MediaDevice;
 import net.java.sip.communicator.service.notification.NotificationService;
+import net.java.sip.communicator.service.notification.SoundNotificationAction;
 import net.java.sip.communicator.service.protocol.ProtocolNames;
 import net.java.sip.communicator.service.protocol.ProtocolProviderFactory;
 import net.java.sip.communicator.service.protocol.ProtocolProviderService;
@@ -27,41 +35,34 @@ import org.jitsi.service.resources.ResourceManagementService;
 import net.java.sip.communicator.util.ServiceUtils;
 
 /**
- * This class implements a simple bundle that utilizes the OSGi framework's
- * event mechanism to listen for service events. Upon receiving a service event,
- * it prints out the event's details.
- **/
+ * Activates the Applet Bundle.
+ * Provides an API that serves the needs of the applet.
+ *
+ * @author Oren Forer
+ */
 public class AppletActivator
     implements BundleActivator
 {
     private final static Logger logger
         = Logger.getLogger(AppletActivator.class);
 
-
     private static BundleContext m_context = null;
 
-    private static NotificationService m_notificationService = null;
-
-    private static ResourceManagementService m_resourcesService = null;
-
-    private static AudioNotifierService m_audioNotifierService = null;
-
-    private static MediaService mediaService = null;
-
+    private static ResourceManagementService resourcesService = null;
     private static ConfigurationService configurationService = null;
+    private static AudioNotifierService audioNotifierService = null;
+    private static NotificationService notificationService   = null;
+    private static MediaService mediaService = null;
 
     private static InputVolumeControl inputVolumeControl = null;
     private static OutputVolumeControl outputVolumeControl = null;
 
-
     /**
-     * Callback objects. These objects call a 'fireEvent'
-     * function that exists in the eventing API outside of
-     * Felix, and inside of the applet where Felix was launched
-     * from.  The listeners, too, are registered
-     * inside the eventing API. These objects
-     * take a String Array as arguments. Those arguments
-     * are then parsed and sent to the browser
+     * Callback objects. These objects call a 'fireEvent' function that
+     * exists in the eventing API outside of Felix, and inside of the
+     * applet where Felix was launched from.  The listeners, too, are
+     * registered inside the eventing API. These objects take a String Array
+     * as arguments. Those arguments are then parsed and sent to the browser
      */
     protected Object callEventSource = null;
     protected Object callPeerEventSource = null;
@@ -82,6 +83,10 @@ public class AppletActivator
 
         try
         {
+            /**
+             * Effectively, a hash to get private ip address on Mac Lion
+             * and Mountain Lion.
+             */
             LocalNetaddr.setConfigRoute();
         }
         catch(Exception ex)
@@ -119,10 +124,9 @@ public class AppletActivator
     {
         if (configurationService == null)
         {
-            configurationService
-                = ServiceUtils.getService(
-                        m_context,
-                        ConfigurationService.class);
+            configurationService =
+                ServiceUtils.getService(m_context,
+                    ConfigurationService.class);
         }
 
         return configurationService;
@@ -131,6 +135,7 @@ public class AppletActivator
     /**
      * Returns an instance of the <tt>MediaService</tt> obtained from the
      * bundle context.
+     *
      * @return an instance of the <tt>MediaService</tt> obtained from the
      * bundle context
      */
@@ -138,36 +143,50 @@ public class AppletActivator
     {
         if (mediaService == null)
         {
-            mediaService
-                = ServiceUtils.getService(m_context, MediaService.class);
-
+            mediaService =
+                ServiceUtils.getService(m_context,
+                    MediaService.class);
         }
+
         return mediaService;
     }
 
-    public synchronized static ResourceManagementService getResources()
+    /**
+     * Returns an instance of the <tt>ResourceManagementService</tt>
+     * obtained from the bundle context.
+     *
+     * @return an instance of the <tt>ResourceManagementService</tt>
+     * obtained from the bundle context
+     */
+    public static ResourceManagementService getResources()
     {
-        if (m_resourcesService == null)
+        if (resourcesService == null)
         {
-            ServiceReference serviceReference =
-                m_context.getServiceReference(ResourceManagementService.class
-                    .getName());
-            m_resourcesService =
-                (ResourceManagementService) m_context.getService(serviceReference);
+            resourcesService =
+                ServiceUtils.getService(m_context,
+                    ResourceManagementService.class);
         }
-        return m_resourcesService;
+
+        return resourcesService;
     }
 
-    public static synchronized AudioNotifierService getAudioNotifier()
+    /**
+     * Returns an instance of the <tt>AudioNotifierService</tt>
+     * obtained from the bundle context.
+     *
+     * @return an instance of the <tt>AudioNotifierService</tt>
+     * obtained from the bundle context
+     */
+    public static AudioNotifierService getAudioNotifier()
     {
-        if (m_audioNotifierService == null)
+        if (audioNotifierService == null)
         {
-            m_audioNotifierService
-                = ServiceUtils.getService(
-                    m_context,
-                        AudioNotifierService.class);
+            audioNotifierService =
+                ServiceUtils.getService(m_context,
+                    AudioNotifierService.class);
         }
-        return m_audioNotifierService;
+
+        return audioNotifierService;
     }
 
     /**
@@ -175,16 +194,15 @@ public class AppletActivator
      *
      * @return the <tt>NotificationService</tt> obtained from the bundle context
      */
-    public synchronized static NotificationService getNotificationService()
+    public static NotificationService getNotificationService()
     {
-        if (m_notificationService == null)
+        if (notificationService == null)
         {
-            m_notificationService
-                = ServiceUtils.getService(
-                    m_context,
-                        NotificationService.class);
+            notificationService =
+                ServiceUtils.getService(m_context,
+                    NotificationService.class);
         }
-        return m_notificationService;
+        return notificationService;
     }
 
     public static ServiceReference[] getServiceReferences()
@@ -215,6 +233,7 @@ public class AppletActivator
             logger.error("InvalidSyntaxException :: getServiceReferences : ");
             logger.error(e.getMessage(), e);
         }
+
         return new ServiceReference[0];
     }
 
@@ -254,25 +273,35 @@ public class AppletActivator
         return provider;
     }
 
-    // callback objects
+    /**
+     * Callback function set by the applet. Asynchronous registration
+     * events will be sent through this object
+     */
     public void setRegistrationEventSource(Object registrationEventSource)
     {
         this.registrationEventSource = registrationEventSource;
         registrationManager.setRegistrationEventSource(registrationEventSource);
     }
 
+    /**
+     * Callback function set by the applet. Asynchronous call events
+     * events will be sent through this object
+     */
     public void setCallEventSource(Object callEventSource)
     {
         this.callEventSource = callEventSource;
         callManager.setCallEventSource(callEventSource);
     }
 
+    /**
+     * Callback function set by the applet. Asynchronous call peer
+     * events will be sent through this object
+     */
     public void setCallPeerEventSource(Object callPeerSource)
     {
         this.callPeerEventSource = callPeerSource;
         callManager.setCallPeerEventSource(callPeerSource);
     }
-    // end callback objects
 
     // exported events
     public void call(String userId, String sip)
@@ -384,11 +413,11 @@ public class AppletActivator
     }
 
     /**
-     * Put a specific all peer on hold
+     * Put a specific call peer on hold
      *
-     * @param callId
-     * @param peerId
-     * @param hold
+     * @param callId call id
+     * @param peerId peer id
+     * @param hold on/off
      */
     public void hold(String callId, String peerId, Boolean hold)
     {
@@ -431,6 +460,12 @@ public class AppletActivator
         outputVolumeControl.setVolume(level);
     }
 
+    /**
+     * Controls the playback volume; enables / disables the ringer.
+     *
+     * @param level 0 - 100
+     * @param enableOnNotify ringer on / off
+     */
     public void setOutputVolume(Integer level, Boolean enableOnNotify)
     {
         if (outputVolumeControl == null)
@@ -438,7 +473,12 @@ public class AppletActivator
             outputVolumeControl =
                 new OutputVolumeControl(getMediaService());
         }
-        setNotifyVolumeControl(enableOnNotify.booleanValue());
+
+        /**
+         * Effectively turns off the ringer
+         */
+        setNotifyVolumeOnMute(enableOnNotify.booleanValue());
+
         outputVolumeControl.setVolume(level);
     }
 
@@ -462,6 +502,50 @@ public class AppletActivator
         return outputVolumeControl.getLevel();
     }
 
+    /**
+     * Gives the consuming api the ability to turn off
+     * the ringer
+     *
+     * @param enable on / off
+     */
+    public void setNotifyVolumeOnMute(boolean enable)
+    {
+        try
+        {
+            NotificationService notificationService =
+                AppletActivator.getNotificationService();
+
+            if (enable)
+            {
+                SoundNotificationAction inCallSoundHandler =
+                    new SoundNotificationAction(SoundProperties.INCOMING_CALL, 2000);
+
+                notificationService.registerDefaultNotificationForEvent(
+                    NotificationManager.INCOMING_CALL,
+                        inCallSoundHandler);
+            }
+            else
+            {
+                notificationService.removeEventNotification(
+                    NotificationManager.INCOMING_CALL);
+            }
+        }
+        catch(Exception ex)
+        {
+            logger.error("AppletActivator :: " +
+                "setNotifyVolumeOnMute : Error while enabling / disabling " +
+                    "notification volume control");
+            logger.error(ex, ex);
+        }
+    }
+
+    /**
+     * If enabled (default), sets the volume of the ringer at a constant
+     * volume level (~50) such that changing the playback volume does not
+     * affect the ringer.
+     *
+     * @param enable on / off
+     */
     public void setNotifyVolumeControl(boolean enable)
     {
         try

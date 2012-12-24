@@ -760,7 +760,7 @@ public class CallManager extends CallPeerAdapter
             }
 
             boolean bHungUp = false;
-
+            CallPeerState peerState = null;
             Iterator<? extends CallPeer> peers = call.getCallPeers();
             while (peers.hasNext())
             {
@@ -770,6 +770,7 @@ public class CallManager extends CallPeerAdapter
                     if (peerId == null || peerId.equals(peer.getPeerID()))
                     {
                         logger.debug("Attempt to hangup call " + callId);
+                        peerState = peer.getState();
                         basicTelephony.hangupCallPeer(peer);
                         /* remove the listener before we hang up */
                         peer.removeCallPeerListener(this);
@@ -785,7 +786,7 @@ public class CallManager extends CallPeerAdapter
                 }
             }
 
-            if (bHungUp)
+            if (bHungUp && peerState != CallPeerState.INCOMING_CALL)
             {
                 NotificationManager.fireNotification(
                     NotificationManager.HANG_UP);
